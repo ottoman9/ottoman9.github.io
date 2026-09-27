@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Upper Control Arm: Topology Optimization and Fatigue | Usman Bashir</title>
+<meta name="description" content="Abaqus and Tosca study: multi-load-case topology optimization of a double-wishbone upper control arm, with an independent hand-calculation cross-check and an analytical fatigue check.">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="bar">
+    <div class="wrap nav-row">
+      <a class="brand" href="../index.html">Usman Bashir</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">Menu</button>
+      <nav class="primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#publication">Publication</a>
+        <a href="../index.html#tools">Tools</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </div>
+  <div class="legend" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+</header>
+
+<main>
+  <div class="wrap project-header">
+    <a class="crumb" href="../index.html#work">All studies</a>
+    <h1>Upper Control Arm: Multi-Load-Case Topology Optimization and Fatigue</h1>
+    <dl class="tblock"><div><dt>Solver</dt><dd>Abaqus/Standard + Tosca</dd></div><div><dt>Verified by</dt><dd>Mesh ladder, equilibrium 0.0000%, hand calculation</dd></div><div><dt>Headline</dt><dd><strong>&minus;59% mass</strong>17.4 to 7.1 kg, FoS 4.79</dd></div><div><dt>Load cases</dt><dd>Braking in a turn, cornering, bump</dd></div></dl>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <figure class="hero-figure"><div class="plate"><img src="../assets/img/control-arm-topopt/hero_interpreted_design.png" alt="Interpreted, print-ready surface of the topology-optimized upper control arm at volume fraction 0.25"></div><figcaption>The recommended design, volume fraction 0.25, interpreted from the raw density field into a print-ready surface: 7.1 kg against a 17.4 kg baseline, a 59 percent mass reduction.</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="study"><div class="prose">
+      <h3>Problem</h3>
+      <p>A double-wishbone upper control arm links the wheel knuckle to the chassis and must survive braking, cornering and bump loads without excess mass. The part was reverse-engineered in SolidWorks to Golf R-class vehicle parameters (a double-wishbone front corner sized to Golf R-class mass, wheelbase, track and tyre size, not a literal model of the production part, which is MacPherson strut) and validated in Abaqus under three load cases derived from vehicle dynamics: Brake-in-Turn, Cornering and Bumping. The goal was a minimum-mass design across all three load cases simultaneously, not just the worst single one, with a genuine independent check that the finite element model was telling the truth.</p>
+
+      <h3>Method</h3>
+      <p>Partway through the project, an audit of the braking free body from first principles found a factor-2.16 error in the original Brake-in-Turn moment arm: the original derivation used the tyre rolling radius (324 mm) as the lever arm for the braking force, when the correct arm is the lower ball joint height (150 mm), because brake torque is generated and reacted entirely within the knuckle and never crosses the ball joints. The correction was made, the whole campaign (baseline, and topology optimization at volume fractions 0.40, 0.25 and 0.15) was re-run end to end under the corrected loads, and a single, consistent stress-extraction method (raw, unfiltered, kept-element maxima at SIMP density greater than 0.5) was adopted everywhere, retiring an earlier interior-filtering method that had been excluding the free surface where an optimized shape's peak stress actually lives. Design space was the arm's web, with 10 mm frozen collars at the three mounting interfaces; objective was minimum strain energy summed over all three load cases so one shape had to survive all of them, not just the governing one.</p>
+
+      <h3>Validation</h3>
+      <p>Mesh convergence on the baseline blank is solid: displacement at 10, 7 and 5.5 mm seed sizes agrees to under 0.1 percent. Reaction forces close to 0.0000 percent in every solve, which is a solver convergence requirement and not by itself independent validation, so an independent hand beam-calculation cross-check was built instead. On the un-optimized blank the hand calculation and the finite element model disagreed by 16.2 times, an honestly reported failed check, because a simple beam model cannot capture the blank's load path. On the recommended volume-fraction-0.25 design, modelled as a two-strut load path, the hand calculation and finite element model agree to within 0.88 to 1.76 times across two load-sharing bounds, a genuine pass. Mesh convergence of the optimized shape itself was not separately re-studied, which is stated as a gap rather than assumed clean.</p>
+
+      <h3>Headline results</h3>
+      <table class="results">
+        <caption>Governing load case is Cornering at every design point under the corrected loads. Yield reference: SAE 4130, 560 MPa.</caption>
+        <thead>
+          <tr><th>Design</th><th class="num">Mass</th><th class="num">Governing peak stress</th><th class="num">FoS</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Baseline blank</td><td class="num">17.42 kg</td><td class="num">109.38 MPa</td><td class="num">5.12</td></tr>
+          <tr><td>VF 0.40</td><td class="num">9.20 kg</td><td class="num">112.34 MPa</td><td class="num">4.98</td></tr>
+          <tr><td><strong>VF 0.25 (recommended)</strong></td><td class="num"><strong>7.14 kg (&minus;59%)</strong></td><td class="num"><strong>116.96 MPa</strong></td><td class="num"><strong>4.79</strong></td></tr>
+          <tr><td>VF 0.15</td><td class="num">5.81 kg</td><td class="num">153.23 MPa</td><td class="num">3.65</td></tr>
+        </tbody>
+      </table>
+      <p>Fatigue was assessed analytically against the corrected Cornering service load (unfactored, dividing out the 1.6&times; abuse multiplier), not with an fe-safe run: modified-Goodman margin of 3.60 against a machined endurance limit and 2.07 as-forged, both comfortably in the infinite-life regime with a Miner damage sum of approximately zero.</p>
+    </div></div>
+  </section>
+
+  <section class="fig-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Figures</h2></div>
+      <div class="figure-grid">
+        <figure class="result-fig">
+          <div class="plate"><img src="../assets/img/control-arm-topopt/raw_topopt_iso.png" alt="Raw Tosca density field for the volume-fraction-0.25 topology optimization" loading="lazy"></div>
+          <figcaption>Raw SIMP density field at volume fraction 0.25, isometric view, before surface interpretation. Kept-element stress maxima are extracted from this field directly, not from a smoothed re-mesh.</figcaption>
+        </figure>
+        <figure class="result-fig">
+          <div class="plate"><img src="../assets/img/control-arm-topopt/trade_curve.png" alt="Mass versus governing peak stress trade curve, old superseded loads versus corrected loads" loading="lazy"></div>
+          <figcaption>The mass-versus-stress trade curve under the corrected loads (red) sits with more margin at every design point than the superseded, pre-audit curve (grey): finding and fixing the load error produced a more defensible design, not a scramble to patch a failure.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="lim-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Limitations</h2></div>
+      <div class="limits-box">
+        <ul>
+          <li>Mesh convergence was studied on the baseline blank (10/7/5.5 mm, under 0.1 percent spread) but not separately re-run on the optimized volume-fraction-0.25 shape; this is a stated gap.</li>
+          <li>Fatigue is an analytical Goodman check against a service load, not a full multiaxial fatigue simulation and not an fe-safe run.</li>
+          <li>The part is a double-wishbone front corner sized to Golf R-class vehicle parameters, not a model of the production Golf R front axle, which is MacPherson strut.</li>
+          <li>The hand-calculation cross-check failed by 16.2&times; on the un-optimized blank, a genuine limitation of a simple beam idealisation against the blank's real load path, and passed only once modelled as the optimized design's actual two-strut path.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="tool-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Tools</h2></div>
+      <div class="toolchain">
+        <span class="pill">Abaqus/Standard</span>
+        <span class="pill">Tosca (SIMP topology optimization)</span>
+        <span class="pill">SolidWorks</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap next-project">
+    <a href="snap-fit-latch.html">Next: Snap-fit latch nonlinear contact </a>
+    <a href="../index.html">Back to all projects</a>
+  </div>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <dl class="tblock">
+      <div><dt>Drawn by</dt><dd>Usman Bashir</dd></div>
+      <div><dt>Contact</dt><dd><a href="mailto:usman.bashir1933@gmail.com">usman.bashir1933@gmail.com</a></dd></div>
+      <div><dt>Checked</dt><dd>Every number traces to the project report</dd></div>
+    </dl>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

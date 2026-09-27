@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Usman Bashir | Simulation Portfolio</title>
+<meta name="description" content="Validated simulation studies in explicit crash dynamics, composite buckling, external aerodynamics and topology optimisation by Usman Bashir, first-author researcher in additive manufacturing modelling.">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="bar">
+    <div class="wrap nav-row">
+      <a class="brand" href="index.html">Usman Bashir</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">Menu</button>
+      <nav class="primary">
+        <a href="#work">Work</a>
+        <a href="#publication">Publication</a>
+        <a href="#tools">Tools</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </div>
+  </div>
+  <div class="legend" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+</header>
+
+<main>
+
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <h1>Nonlinear simulation, validated before it is trusted.</h1>
+        <p class="lede">I'm Usman Bashir, a materials engineer (BSc Metallurgical and Materials Engineering) and first author of a journal paper on thermo-mechanical modelling of additive manufacturing. Below are seven studies in crash, composites, aerodynamics and optimisation, each checked against a published result, a closed form or a mesh ladder. I'm looking for a funded MASc or PhD position from Fall 2027.</p>
+        <div class="actions">
+          <a class="btn primary" href="mailto:usman.bashir1933@gmail.com">Email me</a>
+          <a class="btn quiet" href="#work">See the studies</a>
+        </div>
+      </div>
+      <div class="readout" aria-label="Headline results">
+        <div><span class="figure">3.83&times;</span><span class="what">Composite skin bay carries 3.83 times its buckling load before collapse, confirmed on three meshes</span></div>
+        <div><span class="figure">&minus;59%</span><span class="what">Control arm mass after multi-load-case topology optimisation, at a static factor of safety of 4.79</span></div>
+        <div><span class="figure">28.75-30&deg;</span><span class="what">Ahmed body drag crisis located by CFD; the wind-tunnel experiment puts it near 30&deg;</span></div>
+        <div><span class="figure">+34%</span><span class="what">Crash box energy absorbed at the 10&deg; oblique test angle, for 0.2% more peak force</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pub" id="publication">
+    <div class="wrap pub-grid">
+      <div>
+        <p class="label">Peer-reviewed, first author</p>
+        <h2>Published work</h2>
+      </div>
+      <div>
+        <p class="title">Thermo-mechanical analysis of additive manufacturing for material properties estimation of layered polymer composite</p>
+        <p class="authors"><strong>Bashir, U.</strong>, Hassan, A., Ahmed, F., Zain-ul-abdein, M., Mobeen, H., Dildar, A., Hayat, Q., Ijaz, H., Asad, M., and Djavanroodi, F.</p>
+        <p class="venue"><em>Mechanics of Advanced Materials and Structures</em>, 31(26), 8180 to 8190, 2024. Taylor and Francis.</p>
+        <div class="link-row">
+          <a href="https://doi.org/10.1080/15376494.2023.2255258" target="_blank" rel="noopener">Read the paper (DOI)</a>
+          <a href="projects/lpbf-residual-stress.html">The metal L-PBF follow-on study</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="work">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Studies</h2>
+        <p>Each study states what it was checked against before a single headline number is quoted, and each page lists its own limitations.</p>
+      </div>
+
+      <article class="feature">
+        <a class="plate dark" href="projects/crash-box.html" aria-label="Crash box study">
+          <video autoplay muted loop playsinline poster="assets/img/crash-box/hero_winner_pw_10deg.png">
+            <source src="assets/img/crash-box/winner_pw.mp4" type="video/mp4">
+          </video>
+        </a>
+        <div>
+          <p class="solver">Abaqus/Explicit, scripted DOE in Python</p>
+          <h3><a href="projects/crash-box.html" style="text-decoration:none">Crash box under oblique impact</a></h3>
+          <p>Crash boxes are certified head-on, but real crashes arrive at an angle. This study finds the angle where a production-class box stops folding and hinges over (6.25&deg;), traces the cause to the loaded end, and designs a targeted web-and-bead fix, checked by a 25-point designed experiment.</p>
+          <dl class="tblock">
+            <div><dt>Validated against</dt><dd>Karantza and Manolakos oblique crush experiment: axial peak force within 2.6%, energy within 0.8%</dd></div>
+            <div><dt>Energy at 10&deg;</dt><dd><strong>70% &rarr; 94%</strong>retained, baseline to fixed design</dd></div>
+            <div><dt>Intrusion at 10&deg;</dt><dd><strong>&minus;25%</strong>56.8 mm vs 76.0 mm, for 5% more mass</dd></div>
+            <div><dt>Peak crush force</dt><dd><strong>+0.2%</strong>axial, 118.4 kN vs 118.2 kN</dd></div>
+          </dl>
+          <a class="entry-link" href="projects/crash-box.html">Read the crash box study</a>
+        </div>
+      </article>
+
+      <div class="pair offset">
+        <article class="entry">
+          <a class="plate" href="projects/composite-panel.html"><img src="assets/img/composite-panel/mode_shape_crop.png" alt="Out-of-plane displacement of the composite skin bay at peak load, three half-waves" loading="lazy"></a>
+          <p class="solver">Abaqus/Standard, IM7/8552, Hashin damage</p>
+          <h3><a href="projects/composite-panel.html">Composite fuselage skin bay: buckling to collapse</a></h3>
+          <p>Eigen buckling for four layups, then nonlinear postbuckling with progressive ply damage until the bay collapses.</p>
+          <dl class="tblock">
+            <div><dt>Validated against</dt><dd>Closed form and Ritz buckling; first-ply failure vs CLT to 0.00%</dd></div>
+            <div><dt>Collapse load</dt><dd><strong>230 N/mm</strong>3.83 &times; the 60.1 N/mm buckling load</dd></div>
+          </dl>
+        </article>
+
+        <article class="entry">
+          <a class="plate" href="projects/ahmed-body-cfd.html"><img src="assets/img/ahmed-body-cfd/drag_crisis.png" alt="Ahmed body drag coefficient against slant angle showing the drag crisis" loading="lazy"></a>
+          <p class="solver">OpenFOAM v2512, k-omega SST, cloud-run</p>
+          <h3><a href="projects/ahmed-body-cfd.html">Ahmed body: the drag crisis and a spoiler fix</a></h3>
+          <p>Mesh-converged external aerodynamics on the standard automotive benchmark, a slant-angle sweep to locate the drag crisis, then a roof spoiler study.</p>
+          <dl class="tblock">
+            <div><dt>Validated against</dt><dd>Ahmed et al. wind tunnel: Cd inside pre-declared bands at 25&deg; and 35&deg;</dd></div>
+            <div><dt>Spoiler result</dt><dd><strong>&minus;8.4% drag</strong>2 mm roof spoiler at 0&deg; pitch</dd></div>
+          </dl>
+        </article>
+      </div>
+
+      <div class="pair">
+        <article class="entry">
+          <a class="plate" href="projects/control-arm-topopt.html"><img src="assets/img/control-arm-topopt/hero_interpreted_design.png" alt="Topology-optimised upper control arm, interpreted surface at volume fraction 0.25" loading="lazy"></a>
+          <p class="solver">Abaqus/Standard + Tosca</p>
+          <h3><a href="projects/control-arm-topopt.html">Upper control arm: topology optimisation and fatigue</a></h3>
+          <p>Three derived load cases (braking in a turn, cornering, bump), a mass and stiffness trade curve, and a fatigue check on the chosen design.</p>
+          <dl class="tblock">
+            <div><dt>Verified by</dt><dd>Mesh ladder 10 / 7 / 5.5 mm; equilibrium residual 0.0000%; hand calculation</dd></div>
+            <div><dt>Mass</dt><dd><strong>17.4 &rarr; 7.1 kg</strong>at static factor of safety 4.79</dd></div>
+          </dl>
+        </article>
+
+        <article class="entry">
+          <a class="plate" href="projects/snap-fit-latch.html"><img src="assets/img/snap-fit-latch/hero_cad_assembly.png" alt="CAD assembly of the snap-fit latch and equipment case lid" loading="lazy"></a>
+          <p class="solver">SolidWorks + ANSYS Mechanical, nonlinear contact</p>
+          <h3><a href="projects/snap-fit-latch.html">Elastic-by-design snap-fit latch</a></h3>
+          <p>A tool-free polycarbonate latch with a steel keeper, designed to stay elastic in service and stay engaged under abuse.</p>
+          <dl class="tblock">
+            <div><dt>Verified by</dt><dd>Three meshes, 20k to 146k elements: global response within 3.2%</dd></div>
+            <div><dt>Service load, 40 N</dt><dd><strong>6&times; margin</strong>10.9 MPa vs 65 MPa yield; engaged at 100 N</dd></div>
+          </dl>
+        </article>
+      </div>
+
+      <div class="also">
+        <a class="also-row" href="projects/brake-disc.html">
+          <div class="plate"><img src="assets/img/brake-disc/hero_stress_patchbc.png" alt="Brake disc hat-fillet maximum principal stress contour" loading="lazy"></div>
+          <div>
+            <p class="solver">Abaqus/Standard, sequentially coupled</p>
+            <h3>Ventilated brake disc: transient thermal stress</h3>
+          </div>
+          <div class="res">
+            <b>241.7&deg;C peak at 160 km/h</b>
+            <p>Thermal scheme validated against the erfc closed form to within 2.4%. Bolt-circle restraint cuts hat-fillet stress 59.5% versus a full clamp.</p>
+          </div>
+        </a>
+        <a class="also-row" href="projects/lpbf-residual-stress.html">
+          <div class="plate"><img src="assets/img/lpbf-residual-stress/meltpool_calibration.png" alt="Melt-pool width and depth, predicted against measured, for three process settings" loading="lazy"></div>
+          <div>
+            <p class="solver">Abaqus + Fortran DFLUX moving heat source</p>
+            <h3>Metal L-PBF: melt pool to residual stress</h3>
+          </div>
+          <div class="res">
+            <b>Absorptivity calibrated at 0.66</b>
+            <p>The published polymer method carried into metal. The melt pool holds at its calibration point; the part-scale misses are reported with their mechanisms.</p>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="tools">
+    <div class="wrap">
+      <div class="sec-head">
+        <h2>Tools</h2>
+        <p>Every model is built by a Python script and solved headless, so any result on this site can be regenerated.</p>
+      </div>
+      <table class="tools">
+        <tr><td>Abaqus/Explicit</td><td>Crash box: oblique impact with self-contact, a 30-degree angle sweep</td></tr>
+        <tr><td>Abaqus/Standard</td><td>Composite buckling and postbuckling, brake disc thermal stress, control arm, L-PBF</td></tr>
+        <tr><td>Fortran user subroutines</td><td>DFLUX moving laser heat source for the L-PBF study</td></tr>
+        <tr><td>Tosca</td><td>Multi-load-case topology optimisation of the control arm</td></tr>
+        <tr><td>OpenFOAM</td><td>Ahmed body external aerodynamics, run in parallel on a cloud VM</td></tr>
+        <tr><td>ANSYS Mechanical</td><td>Snap-fit latch, nonlinear contact</td></tr>
+        <tr><td>SolidWorks</td><td>Latch CAD and control arm geometry</td></tr>
+        <tr><td>Python</td><td>Scripted model builds, a 25-point designed experiment, post-processing and every figure here</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section class="contact" id="contact">
+    <div class="wrap">
+      <h2>Have a funded position for Fall 2027?</h2>
+      <a class="mail" href="mailto:usman.bashir1933@gmail.com">usman.bashir1933@gmail.com</a>
+      <div class="others">
+        <a href="https://www.linkedin.com/in/ottomanbashir/" target="_blank" rel="noopener">LinkedIn</a>
+        <a href="https://github.com/ottoman9" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://doi.org/10.1080/15376494.2023.2255258" target="_blank" rel="noopener">Journal paper</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <dl class="tblock">
+      <div><dt>Drawn by</dt><dd>Usman Bashir</dd></div>
+      <div><dt>Checked</dt><dd>Every number traces to its project report</dd></div>
+      <div><dt>Revision</dt><dd>September 2026</dd></div>
+    </dl>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+</body>
+</html>

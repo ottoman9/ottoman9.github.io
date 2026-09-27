@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metal L-PBF: Melt-Pool Calibration and Residual-Stress Modelling | Usman Bashir</title>
+<meta name="description" content="Abaqus and a Fortran DFLUX user subroutine model of laser powder bed fusion in IN625: melt-pool calibration against NIST AM Bench data, and two documented negative results at part scale.">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="bar">
+    <div class="wrap nav-row">
+      <a class="brand" href="../index.html">Usman Bashir</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">Menu</button>
+      <nav class="primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#publication">Publication</a>
+        <a href="../index.html#tools">Tools</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </div>
+  <div class="legend" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+</header>
+
+<main>
+  <div class="wrap project-header">
+    <a class="crumb" href="../index.html#work">All studies</a>
+    <h1>Metal L-PBF: Melt-Pool Calibration and Residual-Stress Modelling</h1>
+    <dl class="tblock"><div><dt>Solver</dt><dd>Abaqus/Standard + Fortran DFLUX</dd></div><div><dt>Checked against</dt><dd>NIST AM Bench 2018, IN625</dd></div><div><dt>Headline</dt><dd><strong>&eta; = 0.66</strong>absorptivity, calibrated melt pool</dd></div><div><dt>Status</dt><dd>Part-scale misses documented with mechanisms</dd></div></dl>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <figure class="hero-figure"><div class="plate"><img src="../assets/img/lpbf-residual-stress/hero_deflection_story.png" alt="Part-scale deflection predictions across four attempts against the measured NIST AM Bench band"></div><figcaption>Four attempts at predicting the NIST AM Bench 2018 bridge's measured spring-back after cutting from the build plate: the only attempt inside the declared band was withdrawn on internal audit for physically unsound modelling choices.</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="study"><div class="prose">
+      <h3>Problem</h3>
+      <p>Laser powder bed fusion leaves a metal part in residual tension: cut it free of the build plate and it springs. This project is the research continuation of my published work on thermo-mechanical modelling of additive manufacturing, moving from a layered polymer composite to metal powder bed fusion in IN625, using a custom Fortran DFLUX user subroutine for the moving heat source. NIST's AM Bench 2018 published the machine settings, the geometry, and the measured spring of an IN625 bridge specimen, 1.276 mm upward at one ridge after a partial wire-EDM release cut, which this project used as a pre-declared target: a 4-core Abaqus model, with nothing tuned against that number, inside a plus or minus 25 percent band declared before any solve ran.</p>
+
+      <h3>Method</h3>
+      <p>Work proceeded in two scales, deliberately not tuned against each other. At melt-pool scale, a single-track thermal model was calibrated against one NIST measurement (195 W, 800 mm/s) by adjusting laser absorptivity, then frozen and tested against two untouched holdout conditions at different power and speed. At part scale, the full bridge geometry was voxelized from the published NIST STL to within 0.04 percent of its exact volume, a lumped-layer thermal history was built and audited for numerical artefacts, and four separate attempts were made to carry that thermal history into a mechanical model predicting the measured spring-back.</p>
+
+      <h3>Validation</h3>
+      <p>The melt-pool model passes at its calibration point (predicted solidus width and depth within a few percent of measured) but misses both untouched holdouts, and the misses are monotonic in scan speed: too shallow at low speed, too wide and deep at high speed. A counterfactual check confirmed the misses are structural, not a mis-set absorptivity: rescuing one holdout would require an absorptivity above unity, which is not physical. At part scale, the first deflection attempt landed inside the declared band and was reported as a pass, then retracted on internal audit after three independent problems were found by reading the model's own output: zero plastic yielding anywhere in the part (physically implausible for a process this far from equilibrium), an inert release-cut step that removed no material and produced identical results with or without it, and a boundary condition that had been selected after the answer was already known. Two further attempts using a traced inherent-strain method, not invented, both missed by a wide margin, and the mechanism was identified: the traced eigenstrain is roughly five times the yield strain of the material card used, so the model's own plasticity absorbs the strain that should have been stored and released as spring-back. A fourth attempt, transplanting a published method in full, was stopped at the reading stage because that method's own constitutive core and validation-coupon dimensions are not published, so it could not be reproduced honestly rather than guessed at.</p>
+
+      <h3>Headline results</h3>
+      <table class="results">
+        <caption>Melt-pool calibration and part-scale deflection, IN625, NIST AM Bench 2018 geometry. Measured spring-back: 1.276 mm.</caption>
+        <thead>
+          <tr><th>Result</th><th class="num">Value</th><th>Verdict</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Melt pool, calibration case</td><td class="num">within a few %</td><td>pass, single point</td></tr>
+          <tr><td>Melt pool, two holdout cases</td><td class="num">up to +38.7%</td><td>miss, mechanism identified</td></tr>
+          <tr><td>Deflection, attempt 1 (retracted)</td><td class="num">+1.12 to +1.17 mm</td><td>inside band, withdrawn on audit</td></tr>
+          <tr><td>Deflection, attempts 2 and 3, traced eigenstrain</td><td class="num">+0.071 / &minus;0.060 mm</td><td>miss, mechanism identified</td></tr>
+          <tr><td>Scan-strategy ranking, published method</td><td class="num">-</td><td>fail, does not reproduce published order</td></tr>
+        </tbody>
+      </table>
+      <p>The substantive contribution of this study is not a validated part-scale prediction, which it does not have. It is a melt-pool calibration that holds at exactly the point it was calibrated at and nowhere else tested, plus three specific negative results, each with an identified physical mechanism and a citation, in a field where negative results are rarely written up with this much care.</p>
+    </div></div>
+  </section>
+
+  <section class="fig-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Figures</h2></div>
+      <div class="figure-grid">
+        <figure class="result-fig">
+          <div class="plate"><img src="../assets/img/lpbf-residual-stress/meltpool_calibration.png" alt="Melt pool width and depth, measured versus predicted, at the calibration case and two holdout cases" loading="lazy"></div>
+          <figcaption>Melt-pool width and depth against NIST measurements: the calibration case (centre) passes, both holdouts miss, and the error is monotonic in scan speed.</figcaption>
+        </figure>
+        <figure class="result-fig">
+          <div class="plate"><img src="../assets/img/lpbf-residual-stress/scan_strategy_ranking.png" alt="Scan strategy ranking against the ridge-1 release deflection, four strategies" loading="lazy"></div>
+          <figcaption>Scan-strategy ranking using the industry-standard path-aware inherent-strain method: the published expectation (chessboard worst, strip best) is not reproduced; chessboard ranks third of four.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="lim-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Limitations</h2></div>
+      <div class="limits-box">
+        <ul>
+          <li>No part-scale deflection prediction in this project falls inside the pre-declared band under an internally consistent, defensible model. The one that did was retracted on audit.</li>
+          <li>The melt-pool model is a single-point calibration, not a validated process window; it should not be extrapolated to power-speed combinations away from its calibration point without re-checking.</li>
+          <li>The scan-strategy ranking uses the industry-standard path-aware anisotropic inherent-strain method and does not reproduce the published ranking; this is reported as a documented miss with a proposed mechanism, not resolved.</li>
+          <li>A full transplant of a published high-fidelity method was not attempted because that method's constitutive model and validation geometry are not published in enough detail to reproduce honestly.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="tool-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Tools</h2></div>
+      <div class="toolchain">
+        <span class="pill">Abaqus/Standard</span>
+        <span class="pill">Fortran user subroutine (DFLUX)</span>
+        <span class="pill">Python, mesh and inherent-strain scripting</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap next-project">
+    <a href="../index.html">Back to all projects</a>
+  </div>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <dl class="tblock">
+      <div><dt>Drawn by</dt><dd>Usman Bashir</dd></div>
+      <div><dt>Contact</dt><dd><a href="mailto:usman.bashir1933@gmail.com">usman.bashir1933@gmail.com</a></dd></div>
+      <div><dt>Checked</dt><dd>Every number traces to the project report</dd></div>
+    </dl>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

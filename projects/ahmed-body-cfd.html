@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ahmed Body External Aerodynamics | Usman Bashir</title>
+<meta name="description" content="OpenFOAM study of the Ahmed body: validation against a published drag benchmark, reproducing the drag crisis, and a roof spoiler design study.">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="bar">
+    <div class="wrap nav-row">
+      <a class="brand" href="../index.html">Usman Bashir</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">Menu</button>
+      <nav class="primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#publication">Publication</a>
+        <a href="../index.html#tools">Tools</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </div>
+  <div class="legend" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+</header>
+
+<main>
+  <div class="wrap project-header">
+    <a class="crumb" href="../index.html#work">All studies</a>
+    <h1>Ahmed Body External Aerodynamics</h1>
+    <dl class="tblock"><div><dt>Solver</dt><dd>OpenFOAM v2512, simpleFoam, k-omega SST</dd></div><div><dt>Validated against</dt><dd>Ahmed et al. wind-tunnel drag data</dd></div><div><dt>Headline</dt><dd><strong>28.75-30&deg;</strong>drag crisis, experiment near 30&deg;</dd></div><div><dt>Also</dt><dd>Roof spoiler cuts drag 8.4%</dd></div></dl>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <figure class="hero-figure"><div class="plate"><img src="../assets/img/ahmed-body-cfd/hero_spoiler_delta.png" alt="Drag coefficient for the baseline Ahmed body and three roof spoiler pitch angles"></div><figcaption>Drag coefficient at 0 degrees of pitch: baseline, and three roof trailing-edge spoiler angles, method-identical except for the added geometry.</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="study"><div class="prose">
+      <h3>Problem</h3>
+      <p>A car spends most of its highway fuel pushing air out of the way, and roughly 85 percent of a simplified car's drag comes from the low-pressure wake behind it rather than from the air hitting the front. The Ahmed body, a simplified car-like block with an adjustable rear slant angle, is the standard benchmark for isolating that question: what does the shape of the back do to drag. It is also known for a counter-intuitive result, the drag crisis, where drag rises steadily as the slant steepens and then suddenly falls near 30 degrees, because the flow over the slant detaches completely instead of following it. This study set out to answer three questions in order: can an open-source toolchain reproduce a published drag measurement, does it put the drag crisis where the experiment puts it, and can the validated setup then be used to solve an actual design problem, adding a roof spoiler to a high-drag configuration.</p>
+
+      <h3>Method</h3>
+      <p>simpleFoam (steady RANS, k&minus;&omega; SST with wall functions) was run on mesh ladders at 25 and 35 degree slant angles first, each with a tolerance band against the published experimental drag written down before any solve ran. With validation passed, a refined angle sweep at 1.25 degree spacing located the drag crisis. A third stage then added a 2.0 mm roof trailing-edge spoiler at three pitch angles to the pre-crisis 25 degree body and compared drag against a method-identical baseline, with an independent second signature, the collapse of solver-residual oscillation, checked against the same crisis location.</p>
+
+      <h3>Validation</h3>
+      <p>On the finest mesh, Cd = 0.3179 at 25 degrees and Cd = 0.2904 at 35 degrees, both inside their pre-declared bands (0.287 to 0.347 and 0.267 to 0.327), and both mesh ladders converged. The 35 degree case initially failed the first band drawn, which was investigated and the band re-anchored on documented grounds rather than adjusted to fit the answer, and that full account is kept in the project record rather than smoothed over. The refined sweep located the drag crisis to a 1.25 degree interval, 28.75 to 30 degrees, against an experimental value of approximately 30 degrees, corroborated by an independent signature: the solution's iteration-to-iteration oscillation collapses from 4.63 percent to 0.68 percent peak-to-peak across exactly the same interval.</p>
+
+      <h3>Headline results</h3>
+      <table class="results">
+        <caption>Stage 3 spoiler study, 25 degree slant, baseline versus a 2.0 mm roof trailing-edge spoiler at three pitch angles.</caption>
+        <thead>
+          <tr><th>Case</th><th class="num">Cd</th><th class="num">&Delta; vs baseline</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Baseline, no spoiler</td><td class="num">0.3212</td><td class="num">-</td></tr>
+          <tr><td>Spoiler, 0&deg; pitch</td><td class="num">0.2942</td><td class="num">&minus;8.42%</td></tr>
+          <tr><td>Spoiler, 5&deg; pitch</td><td class="num">0.3036</td><td class="num">&minus;5.48%</td></tr>
+          <tr><td>Spoiler, 15&deg; pitch</td><td class="num">0.3518</td><td class="num">+9.51%</td></tr>
+        </tbody>
+      </table>
+      <p>Every spoiler case, including the pitch that raised drag, collapsed the baseline's 6.56 percent solution oscillation down to about 0.65 percent, which is the pre-declared signature of a regime change. The honest headline is therefore not "a spoiler saves 8 percent" but that this spoiler trips a pre-crisis body into the post-crisis separated regime at every pitch tested, and pitch then sets the drag of that separated configuration. Framed as fuel, the best case (0 degree pitch) is worth about 0.825 MJ per 100 km on the Ahmed body's own frontal area, an aerodynamic-term-only figure with no drive cycle applied.</p>
+    </div></div>
+  </section>
+
+  <section class="fig-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Figures</h2></div>
+      <div class="figure-grid">
+        <figure class="result-fig">
+          <div class="plate"><img src="../assets/img/ahmed-body-cfd/drag_crisis.png" alt="Refined slant angle sweep locating the Ahmed body drag crisis" loading="lazy"></div>
+          <figcaption>Refined sweep at 1.25 degree spacing: the drag crisis is located to 28.75 to 30 degrees, matching the approximate 30 degree experimental value, with a fine-mesh confirmation point.</figcaption>
+        </figure>
+        <figure class="result-fig">
+          <div class="plate"><img src="../assets/img/ahmed-body-cfd/surface_cp_compare.png" alt="Body surface pressure coefficient and symmetry-plane velocity for baseline and three spoiler pitch angles" loading="lazy"></div>
+          <figcaption>Surface Cp (top row) and symmetry-plane streamwise velocity (bottom row): the spoiler cases show the recirculation bubble reattaching further forward than the baseline, the visible signature of the regime change.</figcaption>
+        </figure>
+        <figure class="result-fig">
+          <div class="plate"><img src="../assets/img/ahmed-body-cfd/cpillar_planes.png" alt="C-pillar vortex signature on wake cut planes for baseline and spoiler cases" loading="lazy"></div>
+          <figcaption>Vorticity on wake cut planes: the baseline's strong C-pillar vortex core (blue) is absent in every spoiler case, confirming the mode change independently of the drag number.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="lim-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Limitations</h2></div>
+      <div class="limits-box">
+        <ul>
+          <li>Steady RANS (k&minus;&omega; SST) captures the mean drag crisis location well but does not resolve unsteady wake dynamics; the oscillation metric used here is solver iteration variance, not a physical unsteadiness measurement.</li>
+          <li>The 35 degree validation band was re-anchored mid-study on documented grounds; the original band is kept on record rather than removed.</li>
+          <li>The spoiler study used one geometry family (2.0 mm roof trailing-edge strip) at one slant angle (25 degrees); no claim is made about spoilers on other slant angles or other body classes.</li>
+          <li>Fuel figures are an aerodynamic-drag-term-only estimate on the Ahmed body's own frontal area; no drive cycle or percent-of-total-fuel claim is made.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="tool-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Tools</h2></div>
+      <div class="toolchain">
+        <span class="pill">OpenFOAM v2512, simpleFoam</span>
+        <span class="pill">k&minus;&omega; SST</span>
+        <span class="pill">Cloud compute (IBM Cloud VM)</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap next-project">
+    <a href="control-arm-topopt.html">Next: Upper control arm topology optimization </a>
+    <a href="../index.html">Back to all projects</a>
+  </div>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <dl class="tblock">
+      <div><dt>Drawn by</dt><dd>Usman Bashir</dd></div>
+      <div><dt>Contact</dt><dd><a href="mailto:usman.bashir1933@gmail.com">usman.bashir1933@gmail.com</a></dd></div>
+      <div><dt>Checked</dt><dd>Every number traces to the project report</dd></div>
+    </dl>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Composite Fuselage Skin Bay: Buckling and Postbuckling Collapse | Usman Bashir</title>
+<meta name="description" content="Abaqus/Standard study of an IM7/8552 composite fuselage skin bay: eigenvalue buckling, first-ply failure, and progressive-damage postbuckling collapse.">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="bar">
+    <div class="wrap nav-row">
+      <a class="brand" href="../index.html">Usman Bashir</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">Menu</button>
+      <nav class="primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#publication">Publication</a>
+        <a href="../index.html#tools">Tools</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </div>
+  <div class="legend" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+</header>
+
+<main>
+  <div class="wrap project-header">
+    <a class="crumb" href="../index.html#work">All studies</a>
+    <h1>Composite Fuselage Skin Bay: Buckling and Postbuckling Collapse</h1>
+    <dl class="tblock"><div><dt>Solver</dt><dd>Abaqus/Standard, S4 shells, Hashin damage</dd></div><div><dt>Validated against</dt><dd>Closed form, Ritz series and CLT first-ply failure</dd></div><div><dt>Headline</dt><dd><strong>3.83&times; Ncr</strong>collapse at 230 N/mm</dd></div><div><dt>Material</dt><dd>IM7/8552, four layups</dd></div></dl>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <figure class="hero-figure"><div class="plate"><img src="../assets/img/composite-panel/mode_shape_crop.png" alt="Out-of-plane displacement of the quasi-isotropic skin bay at peak load, three half-waves"></div><figcaption>Out-of-plane displacement at peak load: three half-waves, maximum 7.76 mm, 3.9 times the skin thickness.</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="study"><div class="prose">
+      <h3>Problem</h3>
+      <p>A narrow-body fuselage is a stiffened shell, and between two frames and two stringers the skin is a thin rectangular plate: in compression on the crown under fuselage bending, in in-plane shear under torsion. The design question is not simply when the material fails, but when the plate loses its flat shape and what reserve remains after it does. Metallic fuselages routinely buckle below limit load and carry on in the postbuckled state; composite skins increasingly do the same, and that reserve is only usable if it is quantified. This study builds a class-typical carbon-epoxy skin bay (508 by 178 by 2.0 mm, IM7/8552, sixteen plies) and quantifies the three numbers that describe it: the buckling load, the first-ply-failure load, and the postbuckling collapse load, each with a validation chain and a stated licence.</p>
+
+      <h3>Method</h3>
+      <p>Four layups were built (quasi-isotropic baseline, fibre-dominated HARD, matrix-dominated SOFT, and cross-ply XP), simply supported on four edges as the primary, pessimistic boundary condition, with a clamped case as the stiff bound. Buckling eigenvalues came from a mesh ladder of four S4 fully-integrated shell densities, cross-checked against an independent Ritz series and the closed-form orthotropic-plate solution. First-ply failure came from classical lamination theory against Hashin and Tsai-Wu criteria. Postbuckling collapse used a geometrically nonlinear analysis with a mode-1 imperfection and energy-regularised progressive damage, run to well past the load peak.</p>
+
+      <h3>Validation</h3>
+      <p>Five checks were written down before the runs. Buckling against the Ritz series and closed form passed for the cross-ply (0.00 percent, since it has no bend-twist coupling to expose a difference) but missed the declared 1.5 percent band by 2.0 to 2.5 percent on the other three layups. That miss was not left as an unexplained failure: a rigid-transverse-shear diagnostic isolated the cause as genuine Mindlin-shell transverse shear flexibility, which the Kirchhoff references exclude by construction, and reproduced the converged reference to 0.2 percent once accounted for. The band itself is recorded as failed, honestly, rather than quietly widened. First-ply failure matched the hand CLT calculation to 0.00 percent in every one of sixteen plies, a check that also caught two input errors before they could corrupt anything downstream. Shear buckling reproduced a 41 percent sign asymmetry between the two shear directions, driven by bend-twist coupling, and the sign convention was proven by mode-shape correlation rather than assumed.</p>
+
+      <h3>Headline results</h3>
+      <table class="results">
+        <caption>Quasi-isotropic bay, uniaxial compression, simply supported. Closed form assumes D16 = D26 = 0, which a real quasi-isotropic layup does not satisfy.</caption>
+        <thead>
+          <tr><th>Quantity</th><th class="num">Value</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Buckling load, Ncr (S4 production mesh)</td><td class="num">60.1 N/mm</td></tr>
+          <tr><td>Buckling load, Ncr (Ritz / closed form)</td><td class="num">61.3 / 63.0 N/mm</td></tr>
+          <tr><td>Buckling load, clamped bound</td><td class="num">108.1 N/mm</td></tr>
+          <tr><td>First-ply failure (Hashin / Tsai-Wu)</td><td class="num">903 / 909 N/mm</td></tr>
+          <tr><td>FPF &divide; Ncr</td><td class="num">15&times;</td></tr>
+          <tr><td>Postbuckling collapse load</td><td class="num">230 N/mm = 3.83 &times; Ncr</td></tr>
+          <tr><td>Imperfection sensitivity of collapse (10&times; amplitude range)</td><td class="num">&lt;1%</td></tr>
+        </tbody>
+      </table>
+      <p>The counter-intuitive finding is in the ply orientation study: the cross-ply layup has the highest axial modulus (90.6 GPa) and the lowest buckling load (44.0 N/mm), while the softest layup has the lowest modulus and the highest buckling load (66.6 N/mm), because at this plate's aspect ratio buckling is dominated by the twisting stiffness term D12 + 2D66, which &plusmn;45 plies feed and 0/90 plies starve. Membrane stiffness and bending stability are different properties, and a skin layup should be chosen for the one that governs.</p>
+    </div></div>
+  </section>
+
+  <section class="fig-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Figures</h2></div>
+      <div class="figure-grid">
+<figure class="result-fig tall"><div class="plate"><img src="../assets/img/composite-panel/damage_stack.png" alt="Out-of-plane deflection and fibre and matrix damage fields at collapse for the quasi-isotropic skin bay" loading="lazy"></div><figcaption>Out-of-plane deflection (top) and damage initiation fields at collapse: fibre compression in the outer &plusmn;45 plies concentrates at two diagonally opposite corners of the straight edge strips, not at the buckle crests.</figcaption></figure>
+
+        <figure class="result-fig">
+          <div class="plate"><img src="../assets/img/composite-panel/load_deflection_curve.png" alt="Load versus end shortening and centre deflection curve showing the postbuckling collapse" loading="lazy"></div>
+          <figcaption>Load against end shortening (left) and centre deflection (right): the plate carries load well past the eigenvalue buckling load (dashed line) before collapsing at 230 N/mm.</figcaption>
+        </figure>
+        <figure class="result-fig">
+          <div class="plate"><img src="../assets/img/composite-panel/mesh_convergence.png" alt="Mesh convergence study for the buckling eigenvalue" loading="lazy"></div>
+          <figcaption>Mesh convergence of the buckling eigenvalue against a Richardson extrapolation limit, with the Ritz and closed-form references shown alongside.</figcaption>
+        </figure>
+        <figure class="result-fig">
+          <div class="plate"><img src="../assets/img/composite-panel/ply_orientation_study.png" alt="Buckling load by ply orientation, closed form versus Ritz versus finite element" loading="lazy"></div>
+          <figcaption>Buckling load by layup: the cross-ply has the highest modulus and the lowest buckling load of the four, the counter-intuitive result explained by bend-twist coupling.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="lim-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Limitations</h2></div>
+      <div class="limits-box">
+        <ul>
+          <li>The collapse load is a result for an idealised simply supported corner, not a fastened stringer-frame clip; a real bay has a joint there, which this model does not represent.</li>
+          <li>No delamination is modelled. At four thicknesses of buckle deflection a real laminate may delaminate at the crests before fibre compression governs at the corners.</li>
+          <li>Two of the four fracture energies used in the damage model are memory-sourced rather than freshly traced, though a sensitivity sweep shows the collapse load moves by under 1 percent when they are halved.</li>
+          <li>Only pure compression and pure shear were run, not the combined loading a real bay actually sees.</li>
+          <li>No specific aircraft is claimed; the geometry and layup are class-typical numbers for a narrow-body skin bay.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="tool-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Tools</h2></div>
+      <div class="toolchain">
+        <span class="pill">Abaqus/Standard, S4 shells</span>
+        <span class="pill">Hashin progressive damage</span>
+        <span class="pill">Python, Ritz reference code</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap next-project">
+    <a href="ahmed-body-cfd.html">Next: Ahmed body external aerodynamics </a>
+    <a href="../index.html">Back to all projects</a>
+  </div>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <dl class="tblock">
+      <div><dt>Drawn by</dt><dd>Usman Bashir</dd></div>
+      <div><dt>Contact</dt><dd><a href="mailto:usman.bashir1933@gmail.com">usman.bashir1933@gmail.com</a></dd></div>
+      <div><dt>Checked</dt><dd>Every number traces to the project report</dd></div>
+    </dl>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ventilated Brake Disc: Transient Thermo-Mechanical Analysis | Usman Bashir</title>
+<meta name="description" content="Sequentially coupled Abaqus/Standard study of a ventilated brake disc: thermal braking pulse, elastic and nonlinear stress, and a boundary-condition sensitivity that dominates the answer.">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="bar">
+    <div class="wrap nav-row">
+      <a class="brand" href="../index.html">Usman Bashir</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">Menu</button>
+      <nav class="primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#publication">Publication</a>
+        <a href="../index.html#tools">Tools</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </div>
+  <div class="legend" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+</header>
+
+<main>
+  <div class="wrap project-header">
+    <a class="crumb" href="../index.html#work">All studies</a>
+    <h1>Ventilated Brake Disc: Transient Thermo-Mechanical Analysis</h1>
+    <dl class="tblock"><div><dt>Solver</dt><dd>Abaqus/Standard, sequentially coupled</dd></div><div><dt>Validated against</dt><dd>erfc closed form, within 2.4%</dd></div><div><dt>Headline</dt><dd><strong>241.7&deg;C</strong>peak surface, 160 km/h stop</dd></div><div><dt>Material</dt><dd>EN-GJL-250 grey cast iron</dd></div></dl>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <figure class="hero-figure"><div class="plate"><img src="../assets/img/brake-disc/hero_stress_patchbc.png" alt="Maximum principal stress contour at the hat fillet under a realistic bolt-circle boundary condition"></div><figcaption>Maximum principal stress at the hat fillet, 160 km/h stop, under a bolt-circle washer-band restraint representing how the disc actually bolts to the hub, rather than a full-underside clamp.</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="study"><div class="prose">
+      <h3>Problem</h3>
+      <p>A brake disc converts a car's kinetic energy into heat at the friction face in a few seconds, and that heat has to go somewhere: it drives a transient temperature field that cones the disc out of flat and stresses the hat fillet, the corner where the friction ring meets the mounting hat, in ways that a purely thermal or purely structural model would each miss half of. This study builds a VW Golf R-class ventilated front rotor (340 by 30 mm, mass-calibrated to the 10.6 kg OEM target), runs the transient thermal problem for two braking severities, and maps the result onto a nonlinear structural model to find the fillet stress and the disc's coning, then tests how much of the answer is actually set by a boundary condition assumption rather than by the physics.</p>
+
+      <h3>Method</h3>
+      <p>The friction ring was meshed as a one-vane sector with exact periodic boundary conditions, r-weighted flux distribution across the swept annulus, and a mesh ladder from 2,040 to 20,484 elements. The thermal history was then mapped onto a nonlinear structural model (Rankine-capped cast iron plasticity) to get the hat-fillet stress and the coning shape, first under a simplifying full-underside clamp, then under a more realistic bolt-circle washer-band restraint matching how five bolts actually hold the disc to the hub.</p>
+
+      <h3>Validation</h3>
+      <p>An independent adversarial audit of the whole project found the arithmetic clean at every step it re-derived, but four of the input assumptions biased low: uniform flux instead of the physically correct r-weighted profile, a front braking-share fraction that did not match the source study's own stated range at this deceleration, a contact-fraction factor derived from a formula that assumes equal front/rear contact areas, and no rotor rotational inertia at all. Correcting all four raised the peak temperature from 100.3 to 128.1 &deg;C at 100 km/h and from 185.8 to 241.7 &deg;C at 160 km/h, which is disclosed plainly as a revision rather than folded in silently. The corrected thermal result also now sits inside Limpert's published 80 to 120 K single-stop temperature-rise band at 100 km/h, where the earlier, uncorrected model had sat just below it. Mesh convergence on the corrected load is tight (L2 to L3, +0.12 percent against a 2 percent gate) and the model is bracketed above a lumped-capacity floor and a semi-infinite analytical limit in the correct physical order at both severities.</p>
+
+      <h3>Headline results</h3>
+      <table class="results">
+        <caption>Current numbers, post audit-remediation. Peak surface temperature and hat-fillet maximum principal stress at 160 km/h, elastic model.</caption>
+        <thead>
+          <tr><th>Quantity</th><th class="num">100 km/h</th><th class="num">160 km/h</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Peak surface temperature</td><td class="num">128.1 &deg;C</td><td class="num">241.7 &deg;C</td></tr>
+          <tr><td>Mesh convergence, L2L3</td><td class="num">+0.19%</td><td class="num">+0.12%</td></tr>
+          <tr><td>Hat-fillet stress, full clamp (stiff bound)</td><td class="num">-</td><td class="num">372.8 MPa</td></tr>
+          <tr><td>Hat-fillet stress, bolt-circle band (production BC)</td><td class="num">-</td><td class="num">151.0 MPa</td></tr>
+          <tr><td>Effect of the boundary condition alone</td><td class="num" colspan="2">&minus;59.5%</td></tr>
+        </tbody>
+      </table>
+      <p>The single largest effect in the whole project is not mesh density, fillet radius, or the material model: it is which boundary condition represents the real bolted joint. Changing one `*Boundary` card from a full-underside clamp to a bolt-circle washer band drops the hat-fillet stress by 59.5 percent, on the identical mesh, load and material, while the far-field temperature control moves only 2.6 percent. A nonlinear closure run confirms the corner survives plastically at both severities without the material model's own tensile cap (250 MPa) making that conclusion circular, and the residual stress left after unload is compressive and protective on the second stop, more so under the stiffer bound.</p>
+    </div></div>
+  </section>
+
+  <section class="fig-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Figures</h2></div>
+      <div class="figure-grid">
+        <figure class="result-fig">
+          <div class="plate"><img src="../assets/img/brake-disc/mesh_convergence.png" alt="Thermal mesh convergence for the Golf R rotor" loading="lazy"></div>
+          <figcaption>Thermal mesh convergence, corrected r-weighted flux: L2 is adopted as the production mesh at +0.12 percent against L3.</figcaption>
+        </figure>
+        <figure class="result-fig">
+          <div class="plate"><img src="../assets/img/brake-disc/temperature_history.png" alt="Peak surface temperature history for the braking pulse and cooldown at both severities" loading="lazy"></div>
+          <figcaption>Peak surface temperature through the braking pulse and cooldown: the 100 km/h peak arrives at 55 percent of the stop, not at the end of braking.</figcaption>
+        </figure>
+        <figure class="result-fig">
+          <div class="plate"><img src="../assets/img/brake-disc/erfc_validation.png" alt="Semi-infinite closed-form validation of the thermal scheme and mesh" loading="lazy"></div>
+          <figcaption>Semi-infinite closed-form check on both the numerical scheme (left) and the production mesh (right), with the predicted divergence past the validity window shown as expected, not as an error.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="lim-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Limitations</h2></div>
+      <div class="limits-box">
+        <ul>
+          <li>An earlier claim that a single 160 km/h stop arithmetically could not reach the 200 to 400 &deg;C literature band is weakened by the audit correction: 241.7 &deg;C now sits at the bottom of that band, so only repeat stops or a sustained descent reach the top of it.</li>
+          <li>The cast-iron plasticity card yields in tension at a hardening cap of 250 MPa with no fracture criterion, so a nonlinear result reading below that cap is partly guaranteed by the card, not purely discovered by the solve; the margin is reported primarily as plastic strain against ductility for this reason.</li>
+          <li>The coning-direction mechanism has been reproduced across two geometries built by the same pipeline, which is model repeatability, not independent validation against a measurement.</li>
+          <li>No specific braking system supplier or pad material is claimed; the geometry is a named OEM reference part, EN-GJL-250 cast iron, single-stop loading only.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="tool-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Tools</h2></div>
+      <div class="toolchain">
+        <span class="pill">Abaqus/Standard, sequentially coupled</span>
+        <span class="pill">Python, mesh and load scripting</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap next-project">
+    <a href="lpbf-residual-stress.html">Next: Metal L-PBF melt-pool and residual stress </a>
+    <a href="../index.html">Back to all projects</a>
+  </div>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <dl class="tblock">
+      <div><dt>Drawn by</dt><dd>Usman Bashir</dd></div>
+      <div><dt>Contact</dt><dd><a href="mailto:usman.bashir1933@gmail.com">usman.bashir1933@gmail.com</a></dd></div>
+      <div><dt>Checked</dt><dd>Every number traces to the project report</dd></div>
+    </dl>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

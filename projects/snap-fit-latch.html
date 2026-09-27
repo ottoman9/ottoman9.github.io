@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elastic-by-Design Snap-Fit Latch | Usman Bashir</title>
+<meta name="description" content="SolidWorks CAD and ANSYS Mechanical nonlinear contact study of a tool-free snap-fit lid latch for a portable equipment case, mesh-verified and proven at 2.5 times service load.">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="bar">
+    <div class="wrap nav-row">
+      <a class="brand" href="../index.html">Usman Bashir</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">Menu</button>
+      <nav class="primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#publication">Publication</a>
+        <a href="../index.html#tools">Tools</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </div>
+  <div class="legend" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+</header>
+
+<main>
+  <div class="wrap project-header">
+    <a class="crumb" href="../index.html#work">All studies</a>
+    <h1>Elastic-by-Design Snap-Fit Latch: Mesh-Verified and Proven at 2.5&times; Service Load</h1>
+    <dl class="tblock"><div><dt>Solver</dt><dd>SolidWorks + ANSYS Mechanical, nonlinear contact</dd></div><div><dt>Verified by</dt><dd>Three meshes, 20k to 146k elements</dd></div><div><dt>Headline</dt><dd><strong>6&times; margin</strong>at the 40 N service load</dd></div><div><dt>Abuse load</dt><dd>Engaged at 100 N, 2.5&times; service</dd></div></dl>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <figure class="hero-figure"><div class="plate"><img src="../assets/img/snap-fit-latch/hero_cad_assembly.png" alt="CAD assembly of the tool-free snap-fit lid latch on a portable equipment case"></div><figcaption>CAD assembly: a tool-free snap-fit latch on a portable, injection-moulded equipment case lid, modelled in SolidWorks and solved in ANSYS Mechanical with nonlinear contact.</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="study"><div class="prose">
+      <h3>Problem</h3>
+      <p>A tool-free snap-fit lid latch on a portable equipment case has to do two things that pull against each other: flex elastically enough to snap closed and stay elastic under normal handling, while also holding the lid shut under an abuse load well above expected use, without the plastic hook yielding or the metal keeper deforming enough to let the lid pop open. This was a self-directed design study of exactly that latch: a moulded polycarbonate hook engaging a 17-4PH stainless keeper, sized against a regular-use force and an abuse-use force, with the question being whether the design holds a real margin at both, and where the model's own honesty runs out.</p>
+
+      <h3>Method</h3>
+      <p>The assembly was modelled in SolidWorks and solved in ANSYS Mechanical as a static structural nonlinear contact problem, loading the lid in the opening direction at two force levels: 40 N as the regular-use load and 100 N as the abuse-use load, roughly 2.5 times higher. Stresses were tracked at the three locations that decide the outcome: the polycarbonate hook's 0.6 mm blend radius, the plastic arm's 2 mm root blend, and the peak in the 17-4PH keeper. A three-level mesh study (coarse 19,809 elements, medium 60,343, fine 146,462) checked whether the reported numbers were a converged model result or a mesh artefact.</p>
+
+      <h3>Validation</h3>
+      <p>Global quantities, lid displacement and the arm root blend stress, converge cleanly across the mesh study to within a few percent. The local peak stresses at the hook blend and at the contact edge on the retaining face do not converge the same way: the contact-edge peak in particular approaches a line-contact condition, where mesh refinement keeps raising the peak rather than settling on a value, and this is stated plainly as a limitation rather than papered over with a single mesh's number. The hook blend and keeper peaks reported below are the medium-mesh values, bracketed against the coarse and fine results rather than treated as exact. A separate 150 N run was attempted to find where the latch actually releases; it stalled at 122 N because of contact-tracking convergence, not because the latch released, so no release load is claimed above 100 N.</p>
+
+      <h3>Headline results</h3>
+      <table class="results">
+        <caption>Medium mesh (60,343 elements). Polycarbonate yield 65 MPa; 17-4PH proof stress 1170 MPa.</caption>
+        <thead>
+          <tr><th>Quantity</th><th class="num">40 N (service)</th><th class="num">100 N (abuse)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Hook 0.6 mm blend stress</td><td class="num">10.9 MPa</td><td class="num">28 MPa</td></tr>
+          <tr><td>Margin to yield (hook blend)</td><td class="num">&asymp;6&times;</td><td class="num">&asymp;2.3&times;</td></tr>
+          <tr><td>Metal keeper peak stress</td><td class="num">-</td><td class="num">83 MPa (vs 1170 MPa proof)</td></tr>
+          <tr><td>Engagement overlap retained</td><td class="num">full</td><td class="num">0.59 mm, latch stays engaged</td></tr>
+        </tbody>
+      </table>
+      <p>At the 40 N service load the hook blend runs at roughly a sixth of yield. At the 100 N abuse load, six times the reasoning changes to margin against release rather than margin against yield: the hook stress rises but the latch keeps 0.59 mm of engagement overlap, and the metal keeper sits at 83 MPa against a 1170 MPa proof stress, so the load path that could actually open the case under abuse is nowhere near its limit.</p>
+    </div></div>
+  </section>
+
+  <section class="fig-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Figures</h2></div>
+      <div class="figure-grid">
+        <figure class="result-fig">
+          <div class="plate"><img src="../assets/img/snap-fit-latch/force_displacement.png" alt="Force versus lid displacement curve across three mesh densities" loading="lazy"></div>
+          <figcaption>Force against lid opening displacement at the keeper reference point, three mesh densities: the global load path converges cleanly.</figcaption>
+        </figure>
+        <figure class="result-fig">
+          <div class="plate"><img src="../assets/img/snap-fit-latch/mesh_convergence.png" alt="Mesh convergence of six tracked quantities at 100 N" loading="lazy"></div>
+          <figcaption>Mesh convergence at 100 N for six tracked quantities: lid displacement and the arm root blend stress settle; the hook blend and the retaining-face contact peak do not, which is reported as a limitation rather than resolved with a single mesh.</figcaption>
+        </figure>
+        <figure class="result-fig">
+          <div class="plate"><img src="../assets/img/snap-fit-latch/mesh_detail.png" alt="Medium mesh detail at the hook and keeper contact region" loading="lazy"></div>
+          <figcaption>Mesh detail at the hook and keeper contact region, medium density (60,343 elements), showing the local refinement used to resolve the contact zone.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="lim-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Limitations</h2></div>
+      <div class="limits-box">
+        <ul>
+          <li>Local peak stresses at the hook blend and the retaining-face contact edge do not converge with mesh refinement across the three-level study; the contact-edge peak approaches a line-contact singularity and is not compared directly against yield.</li>
+          <li>A 150 N run stalled at 122 N due to contact-tracking convergence, not latch release; no release load is claimed above the 100 N abuse case that was solved cleanly.</li>
+          <li>These are static analyses only. No fatigue life, creep, temperature dependence or drop-impact certification is claimed.</li>
+          <li>Material data are supplier-typical values for polycarbonate and 17-4PH, not guaranteed design allowables.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="tool-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Tools</h2></div>
+      <div class="toolchain">
+        <span class="pill">SolidWorks</span>
+        <span class="pill">ANSYS Mechanical, nonlinear contact</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap next-project">
+    <a href="brake-disc.html">Next: Ventilated brake disc thermo-mechanical analysis </a>
+    <a href="../index.html">Back to all projects</a>
+  </div>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <dl class="tblock">
+      <div><dt>Drawn by</dt><dd>Usman Bashir</dd></div>
+      <div><dt>Contact</dt><dd><a href="mailto:usman.bashir1933@gmail.com">usman.bashir1933@gmail.com</a></dd></div>
+      <div><dt>Checked</dt><dd>Every number traces to the project report</dd></div>
+    </dl>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

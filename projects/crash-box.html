@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crash Box Oblique-Impact Robustness | Usman Bashir</title>
+<meta name="description" content="Abaqus/Explicit study: validating an oblique crash box model against a published experiment, diagnosing a fold-to-bend mode flip, and pricing a design fix.">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="bar">
+    <div class="wrap nav-row">
+      <a class="brand" href="../index.html">Usman Bashir</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">Menu</button>
+      <nav class="primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#publication">Publication</a>
+        <a href="../index.html#tools">Tools</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </div>
+  <div class="legend" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+</header>
+
+<main>
+  <div class="wrap project-header">
+    <a class="crumb" href="../index.html#work">All studies</a>
+    <h1>Crash Box Oblique-Impact Robustness</h1>
+    <dl class="tblock"><div><dt>Solver</dt><dd>Abaqus/Explicit; scripted DOE in Python</dd></div><div><dt>Validated against</dt><dd>Karantza and Manolakos oblique crush experiment</dd></div><div><dt>Headline</dt><dd><strong>+34%</strong>energy at the 10&deg; test angle</dd></div><div><dt>Also</dt><dd>25-point designed experiment, 50 solves</dd></div></dl>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <figure class="hero-figure"><div class="plate dark"><video controls muted playsinline poster="../assets/img/crash-box/hero_winner_pw_10deg.png">
+          <source src="../assets/img/crash-box/winner_pw.mp4" type="video/mp4">
+        </video></div><figcaption>The working design (PW) against the baseline at 10 degrees, the RCAR test angle: same crush, same scale. The baseline folds over; PW keeps crumpling.</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="study"><div class="prose">
+      <h3>Problem</h3>
+      <p>A crash box is the short thin-walled tube between a car's bumper beam and its frame rail. It is meant to crumple fold by fold, absorbing crash energy so the expensive structure behind it survives. Crash boxes are designed and certified overwhelmingly for head-on impact, where they work well, but real crashes are rarely head-on. Past some critical load angle, the neat folding becomes unstable and the box snaps sideways into global bending, hinging like a bent straw instead of crumpling, and the energy it was supposed to absorb goes into the rail and the cabin instead. This study asks three questions in order: can an Abaqus/Explicit model reproduce a published oblique crush experiment, where does a production-class box lose its folding, and can that boundary be pushed outward without paying in mass or in peak crush force, the number that decides whether a design is usable at all.</p>
+
+      <h3>Method</h3>
+      <p>The model was validated against Karantza and Manolakos' published oblique crush experiment (square AA6060-T6 extrusions) before anything else was allowed to run, against a tolerance band written down in advance. A Golf-class production steel box was then built and swept from 0 to 30 degrees. A two-by-two factorial with a plain-tube reference isolated the mechanism: it is the end flange attachment, not the tube cross-section, that governs the oblique failure, a result confirmed by testing four independent ways to stiffen the attachment, all of which bought angle performance but broke the peak-force cap. The working fix, PW, instead adds a short internal web across the loaded third of the box plus two embossed bead bands, targeted precisely at the region that was going to fail rather than stiffening the joint. A 25-point scripted Latin-hypercube DOE, built in Python on the project's own deck generator, then checked whether hand-picked geometry had left performance on the table.</p>
+
+      <h3>Validation</h3>
+      <p>The model reproduces the published axial case (peak crush force within 2.6 percent, energy absorption within 0.8 percent, matching fold count) and the deformation mode across the published oblique range. Across all seven published oblique cases, however, only 3 of 7 met the plus or minus 10 percent band declared before any solve ran, all misses in peak force under edge contact, and that band was never widened after the fact. Consequently this report claims energy against angle, the location of the fold-to-bend transition, and baseline-versus-modified comparisons in matched configuration, where a systematic bias cancels. It does not claim an absolute peak crush force at a given angle: wherever peak force appears, it is reported strictly as a ratio against the baseline. An earlier headline, that PW clears the RCAR oblique condition where the baseline does not, was withdrawn after an internal audit found the verdict had been evaluated over a 60 mm window while the text claimed the full 100 mm stroke. It is replaced below by the intrusion result, which needs no stroke-limit assumption and is stronger for it.</p>
+
+      <h3>Headline results</h3>
+      <table class="results">
+        <caption>Baseline versus the working design (PW), matched mass class where noted. RCAR angle is 10 degrees, the industry oblique test condition.</caption>
+        <thead>
+          <tr><th>Quantity</th><th class="num">Baseline</th><th class="num">PW</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Mass</td><td class="num">reference</td><td class="num">+5.0%</td></tr>
+          <tr><td>Axial peak crush force</td><td class="num">118.19 kN</td><td class="num">118.42 kN (+0.2%)</td></tr>
+          <tr><td>Energy retention at 10&deg;</td><td class="num">70%</td><td class="num">94%</td></tr>
+          <tr><td>Energy at 10&deg; vs baseline</td><td class="num">reference</td><td class="num">+34%</td></tr>
+          <tr><td>Stroke to absorb RCAR impact (15 km/h, 10&deg;)</td><td class="num">76.0 mm</td><td class="num">56.8 mm (&minus;25%)</td></tr>
+          <tr><td>Fold-to-bend transition angle</td><td class="num">6.25&deg; (lower bound)</td><td class="num">7.5-8.75&deg;, free fix only</td></tr>
+        </tbody>
+      </table>
+      <p>A 25-point designed experiment over PW's own bead depth, web thickness, band position and spacing ranked PW's hand-picked parameters second out of twenty-five, beaten by 0.83 percent, inside the 3 percent threshold declared before the study ran. The fitted response surface across that same design space was a documented failure (R<sup>2</sup> = 0.715, cross-validated Q<sup>2</sup> = &minus;8.35): the design space contains a fold-versus-bend mode boundary that no polynomial surface can represent, and a verification run confirmed the surface's own prediction was wrong by 68.8 percent. That failure is reported as a finding, not hidden.</p>
+    </div></div>
+  </section>
+
+  <section class="fig-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Figures</h2></div>
+      <div class="figure-grid">
+        <figure class="result-fig">
+          <div class="plate"><img src="../assets/img/crash-box/candidate_g_7p5deg.png" alt="Candidate G plastic strain contour at 7.5 degrees, baseline versus free mass-neutral fix" loading="lazy"></div>
+          <figcaption>Candidate G, the mass-neutral bead fix, at 7.5 degrees: still folding where the baseline has already hinged over. Free in mass, but it loses 9.5 to 18.6 percent energy at severe speed (56 km/h), which is why PW replaced it as the working design.</figcaption>
+        </figure>
+        <figure class="result-fig">
+          <div class="plate"><img src="../assets/img/crash-box/summary_one_pager.png" alt="Summary chart: energy retention versus load angle for baseline, G and PW, and a priced design comparison table" loading="lazy"></div>
+          <figcaption>Energy retention against load angle for the baseline, the free fix (G) and the working design (PW), with the priced comparison against a rejected multi-cell design that broke the peak-force cap.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="lim-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Limitations</h2></div>
+      <div class="limits-box">
+        <ul>
+          <li>No validated absolute peak crush force at a given angle exists in this study; every peak-force claim is a ratio against the matched baseline.</li>
+          <li>The 6.25 degree fold-to-bend transition is a pessimistic lower bound, set by modelling the end attachment as a free-standing 1.8 mm flange rather than a bolted, rail-stiffened joint. A better-represented joint would move the number outward.</li>
+          <li>PW is a fix for roughly 6 to 20 degrees; beyond 20 degrees it converges on the baseline, and by 30 degrees the two are indistinguishable.</li>
+          <li>The earlier RCAR clears/fails framing was withdrawn after audit; only the intrusion (stroke) comparison is claimed, and it holds across every plausible assumption about how crash energy splits between the struck side and the rest of the structure.</li>
+          <li>The geometry is a documented Golf-class reconstruction, not a measured production part, so claims are about the box family, not a specific vehicle.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="tool-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Tools</h2></div>
+      <div class="toolchain">
+        <span class="pill">Abaqus/Explicit</span>
+        <span class="pill">Abaqus/Standard (eigenvalue buckling)</span>
+        <span class="pill">Python, scripted deck generation and DOE</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap next-project">
+    <a href="composite-panel.html">Next: Composite fuselage skin bay </a>
+    <a href="../index.html">Back to all projects</a>
+  </div>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <dl class="tblock">
+      <div><dt>Drawn by</dt><dd>Usman Bashir</dd></div>
+      <div><dt>Contact</dt><dd><a href="mailto:usman.bashir1933@gmail.com">usman.bashir1933@gmail.com</a></dd></div>
+      <div><dt>Checked</dt><dd>Every number traces to the project report</dd></div>
+    </dl>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

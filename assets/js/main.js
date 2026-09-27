@@ -1,0 +1,11 @@
+// Minimal shared JS: mobile nav toggle only.
+document.addEventListener('DOMContentLoaded', function () {
+  var toggle = document.querySelector('.nav-toggle');
+  var nav = document.querySelector('nav.primary');
+  if (!toggle || !nav) return;
+  toggle.addEventListener('click', function () {
+    nav.classList.toggle('open');
+    var expanded = nav.classList.contains('open');
+    toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+  });
+});
