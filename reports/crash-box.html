@@ -1,0 +1,1711 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crash Box Oblique-Impact Robustness: Anchor Reproduction, a Mode-Flip Diagnosis, and a Priced Design Fix in Abaqus/Explicit | Technical report | Usman Bashir</title>
+<meta name="description" content="Full technical report: Crash Box Oblique-Impact Robustness: Anchor Reproduction, a Mode-Flip Diagnosis, and a Priced Design Fix in Abaqus/Explicit.">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body class="report-page">
+
+<header class="site">
+  <div class="bar">
+    <div class="wrap nav-row">
+      <a class="brand" href="../index.html">Usman Bashir</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">Menu</button>
+      <nav class="primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#publication">Publication</a>
+        <a href="../index.html#tools">Tools</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </div>
+  <div class="legend" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+</header>
+
+<main>
+  <div class="wrap report-bar">
+    <a class="crumb" href="../projects/crash-box.html">Back to the project summary</a>
+    <button class="btn quiet print-btn" type="button" onclick="window.print()">Print or save as PDF</button>
+  </div>
+  <article class="report">
+<h1>Crash Box Oblique-Impact Robustness: Anchor Reproduction, a Mode-Flip Diagnosis, and a Priced Design Fix in Abaqus/Explicit</h1>
+<p><strong>Author:</strong> Usman Bashir, BSc Metallurgical and Materials Engineering
+<strong>Date:</strong> 2026-08-23
+<strong>Solver:</strong> Abaqus 2024, Explicit (plus Standard for buckling eigenmodes), 4 cores</p>
+<p><em>Internal working records cited in this report (for example DECISIONS, RESULTS_LOG and the sources ledger) are available on request.</em></p>
+<hr />
+<blockquote>
+<p><strong>Reading order.</strong> <strong>Section 0 is a self-contained executive summary</strong>; read it
+alone if you read nothing else. Sections 1 to 10 were written when the study
+closed with a mass-neutral fix worth about two degrees and no energy. Sections
+11 to 14 were added after further rounds (a paid-mass round, a plain-tube
+reference with a two-by-two factorial, two flange studies, and a designed
+experiment) that produced a working design and overturned the project's central
+assumption about WHERE the failure lives. <strong>Section 12 carries the restated
+conclusion; Section 13 records a headline claim this project withdrew after
+auditing itself.</strong> The earlier sections are kept unchanged as the record of how
+the result was reached, per working rule 4.</p>
+</blockquote>
+<h2>0. Executive summary</h2>
+<p><em>Self-contained. Every statement here is carried from a numbered section below,
+and nothing is claimed here that is not established there.</em></p>
+<h3>The problem, and why it is still open</h3>
+<p>A crash box is the short thin-walled steel tube between a car's bumper beam and
+its frame rail. In a crash it is meant to crumple fold by fold, like a
+concertina, absorbing energy so the expensive structure behind it survives. They
+are designed and certified overwhelmingly for <strong>head-on</strong> impact, and head-on
+they work well.</p>
+<p>Real crashes are rarely head-on. Past some critical load angle the neat folding
+becomes unstable and the box snaps sideways into <strong>global bending</strong>, hinging
+like a bent straw instead of crumpling. When that happens the energy it was
+supposed to eat goes into the rail and the cabin instead. The published
+literature reports large gains for clever crash box designs, but almost always
+at zero degrees, and almost always without enforcing the constraint that decides
+whether a design is usable: the <strong>peak crush force</strong>, the initial force spike
+the box transmits, which is what injures occupants and what a manufacturer will
+not allow to rise.</p>
+<p>This study asks three questions in order, each earned before the next: can the
+model reproduce a published experiment, where does a production-class box lose
+its folding, and can that boundary be pushed outward without paying in mass or
+peak force.</p>
+<h3>What the model is licensed to say</h3>
+<p>The model was validated against a published oblique crush experiment before
+anything else was allowed to run. It reproduces energy absorption to within
+about 10 percent, fold counts to within one fold, and the deformation mode
+everywhere in the validation range, but it over-predicts peak crush force under
+edge contact at 10 degrees and above by roughly 20 percent, and only 3 of 7
+published cases met the tolerance band declared in advance. That band was never
+widened after the fact.</p>
+<p><strong>So this report may claim energy against angle, the location and sharpness of
+the mode change, and baseline-versus-modified comparisons in matched
+configuration where a systematic bias cancels. It may not claim an absolute peak
+crush force at a given angle as a validated number</strong>, and wherever peak force
+appears it is reported strictly as a ratio against the baseline (<code>DECISIONS.md</code>
+D3).</p>
+<h3>The four results</h3>
+<p><strong>1. The box stops folding at 6.25 degrees, and the transition is sharp.</strong> Not a
+gentle degradation: the fold ratio falls roughly ten times faster across the
+transition than below it, and two different starting imperfections agree to 0.24
+percent. <strong>This number is a lower bound, not a measurement.</strong> Section 11.3
+established why: the failure is governed by the end attachment, not the tube,
+and the modelled attachment is a free-standing 1.8 mm flange where a real box
+bolts to a stiffer rail. A better-represented joint would move the number
+outward.</p>
+<p><strong>2. It is the attachment, not the tube, that governs the oblique failure.</strong> A
+plain tube unexpectedly beat the production-representative baseline; a two-by-two
+factorial attributed the whole effect to the end flange rather than the section
+shape. This reframes the project and is its most transferable engineering
+result. It also comes with a firm negative: the attachment cannot be exploited.
+Four independent routes to stiffen it (removing the flange, thickening it,
+stiff flange plus a base trigger, and gussets at two sizes) all buy angle
+performance and all break the peak force cap, because anything resisting the
+hinge at the joint also resists the fold that starts there.</p>
+<p><strong>3. A design that works, priced.</strong> <strong>PW</strong> adds a short internal web across the
+loaded third of the box plus two embossed bead bands, for <strong>plus 5 percent mass
+and no worse peak force</strong> (118.42 kN against the baseline's 118.19, inside the
+declared 1 percent cap). It removes the energy cliff: energy retention at 10
+degrees rises from the baseline's 70 percent to 94 percent, energy at 10 degrees
+is <strong>plus 34 percent</strong>, and best specific energy absorption gain is plus 28
+percent. Unlike the free mass-neutral fix it still gains at severe speed
+(56 km/h), where that fix would have been rejected. At the angle the industry
+actually tests at, RCAR's 15 km/h 10 degree condition, <strong>PW absorbs the impact
+in about a quarter less stroke than the baseline, 56.8 mm against 76.0 mm</strong>, and
+that saving holds across every plausible assumption about how the crash energy
+splits.</p>
+<p><strong>4. Hand-picking had already found the plateau.</strong> A 25-point designed
+experiment over PW's web thickness, bead depth, bead position and band spacing,
+50 solves, ranks PW <strong>second out of twenty-five</strong>, and the point that beats it
+does so by 0.83 percent. That is inside the 3 percent threshold declared before
+the study ran, so the recorded result is that PW's hand-picked parameters were
+already near optimal.</p>
+<h3>Three findings that transfer beyond this part</h3>
+<p><strong>Deformation mode and energy absorption are largely independent levers.</strong> The
+project's founding assumption was that stopping the sideways collapse would
+recover the lost energy. Six design candidates showed it does not, and the
+designed experiment later found the same thing independently: designs that bend
+can out-absorb designs that fold.</p>
+<p><strong>Weaken precisely what was going to fail, and nothing else.</strong> Every candidate
+that removed material from a region already carrying load lost energy. The
+winners added or triggered locally, at the loaded end, leaving the rest alone.</p>
+<p><strong>Strength-based fixes reproduce the literature's gains and break the
+constraint the literature does not apply.</strong> Real multi-cell construction gave
+the largest energy gain in the project, plus 83 percent at 10 degrees, together
+with the largest violation, plus 87 percent peak force. That pattern repeated
+across three unrelated candidates. The published gains are real; they would be
+rejected by a peak force constraint.</p>
+<h3>The honest limits</h3>
+<ul>
+<li><strong>The fix has a band.</strong> PW is a fix for roughly 6 to 20 degrees. Beyond 20 it
+  converges on the baseline, and by 30 degrees the two are indistinguishable.</li>
+<li><strong>Golf-class, not Golf-exact.</strong> The baseline geometry is a documented nominal
+  standing in for a production C-segment box, not a measured part, so every
+  claim is about the family.</li>
+<li><strong>No validated absolute peak force</strong>, per the licence above.</li>
+<li><strong>The response surface deliverable does not work.</strong> The fitted surface scored
+  R2 = 0.715 on its own data and Q2 = -8.35 under cross-validation, meaning it
+  predicts unseen designs worse than a constant would, because the design space
+  contains a mode boundary that no polynomial can represent. It is reported as a
+  failure rather than dressed up, and the verification run confirmed the
+  prediction that it was wrong by two thirds.</li>
+<li><strong>A headline claim was withdrawn.</strong> An earlier version reported that PW passes
+  the RCAR condition the baseline fails. An audit found that verdict had been
+  evaluated over a 60 mm post-processing window while the text claimed the full
+  100 mm stroke; against the stated criterion the baseline also passes. The
+  claim was withdrawn and replaced with the intrusion result above, which needs
+  neither the energy-split assumption nor a stroke-limit assumption and is
+  therefore stronger. Section 13 records it in full.</li>
+<li>Also stated in Section 9: a continuous-shell model of what is really a
+  spot-welded box (biased toward cleaner folding), plasticity without damage
+  (biased toward over-prediction of energy), and a secondary regulatory claim
+  that could not be traced to primary text and is therefore used nowhere.</li>
+</ul>
+<hr />
+<h2>1. Summary</h2>
+<p>A crash box is the short thin-walled tube between a car's bumper beam and its
+frame rail. It is meant to crumple fold by fold, eating crash energy so the
+structure behind it sees a controlled force. Crash boxes are designed and
+certified overwhelmingly for head-on load, and in that case they work well.
+Real crashes are rarely head-on. Past some critical load angle the neat
+folding becomes unstable and the box snaps sideways into global bending, and
+the energy it was supposed to absorb goes into the rail and the cabin instead.</p>
+<p>I set out to answer three questions in order, each having to be earned before
+the next was allowed. Can an Abaqus/Explicit model reproduce a published
+oblique crush experiment, against a tolerance band written down before any
+solve ran? If so, where exactly does a Golf-class production box lose its
+folding behaviour, and how sharply? And can a design change push that boundary
+outward without adding mass or raising the head-on force spike?</p>
+<p>The three headline results:</p>
+<ol>
+<li><strong>The anchor reproduction passed on its axial case and failed its oblique
+   gate.</strong> The best axial configuration lands at PCF 42.894 kN against a
+   published 44.02 (-2.6 percent) and EA 0.9203 kJ against 0.913 (+0.8
+   percent), with three folds matching the published photographs and a clean
+   energy audit. Across all seven published cases, however, only 3 of 7 met
+   the pre-declared plus or minus 10 percent band, and the failures are all in
+   peak force under edge contact. The band was never widened. Section 4
+   describes the two investigation rounds, the two genuine model faults they
+   exposed, and the structural tension that stopped me going further.</li>
+<li><strong>The Golf-class box stops folding at 6.25 degrees, and the transition is
+   sharp and not a numerical accident.</strong> The fold ratio falls at -0.191 per
+   degree across the transition against -0.020 per degree below it, roughly an
+   order of magnitude steeper than the surrounding trend. Two different
+   imperfection seeds agree to 0.24 percent on energy and 0.002 on fold ratio,
+   with zero mode disagreements. Energy retention runs
+   100/94/92/90/84/70/62/49/34/28 percent from 0 to 30 degrees.</li>
+<li><strong>A mass-neutral fix buys about two degrees, and only at low speed.</strong> Two
+   embossed bead bands near the loaded end move the transition from 6.25
+   degrees to between 7.5 and 8.75, at identical mass, axial peak force within
+   0.1 percent and energy within 0.5 percent averaged across the whole sweep.
+   It does <strong>not</strong> flatten the energy curve, which the brief also asked for.
+   And at 56 km/h its advantage shrinks by 40 percent while costing up to 18.6
+   percent of energy, so it would be rejected at severe speed.</li>
+</ol>
+<p>The finding I did not expect, and which reframes the whole problem, is in
+Section 6.4: <strong>deformation mode and energy absorption turned out to be largely
+independent levers.</strong> Phase B located the mode flip precisely and I assumed,
+as the brief did, that stopping the flip would recover the energy. Six design
+candidates showed it does not. At 8.75 degrees the untouched baseline is
+classified as bending and absorbs 4.786 kJ, while a candidate that folds more
+cleanly and shortens by the same amount absorbs 3.964 kJ.</p>
+<p>The discipline holding this together is pre-registration. Bands, audit
+thresholds, geometry and success criteria were written into <code>BRIEF.md</code>,
+<code>DECISIONS.md</code> and <code>RESULTS_LOG.md</code> before the runs that would test them
+existed. Several predictions I wrote down were refuted, including one about my
+own correction and one about my own success criterion. They are listed as
+refuted in Section 8, because a scorecard with no failures in it is evidence
+that the scorecard was written afterwards.</p>
+<hr />
+<h2>2. The benchmark, and why I chose it</h2>
+<p>The oblique anchor is <strong>Karantza and Manolakos, Metals 2022, 12(11), 1862</strong>
+(<code>P4_SOURCES.md</code> A8), open access, CC BY, full 21-page PDF archived locally.
+Square AA6060-T6 extrusions, 50 mm outer width, 1.5 mm wall, 100 mm long,
+78.57 g, crushed 60 mm at 0, 5, 10 and 15 degrees, each in two initial contact
+conditions (a whole top edge touching first, or a single corner). It publishes
+the complete material card including an eight-point hardening table, a full
+PCF/MCF/EA/SEA/CFE table for all seven cases, force-displacement curves at
+every angle, photographed collapse modes, and its own LS-DYNA deviations.</p>
+<p>That last item matters: the paper's own finite element model landed within
+0.13 to 7.6 percent on peak force and 1.6 to 6.8 percent on energy. A
+different code running the same published material card earns a slightly wider
+band, not a loose one, which is why <code>BRIEF.md</code> Section 6 set plus or minus 10
+percent.</p>
+<p>The first-choice anchor was Reyes, Langseth and Hopperstad (2002, 2003), the
+paper this literature traces back to, but its numeric data sits behind a
+paywall and three retrieval attempts failed. The sources pass recorded that
+failure explicitly rather than quietly substituting, and the Metals 2022 paper
+was recovered instead via the publisher's asset CDN after the main site
+returned 403 to automated fetches. Reyes remains the mechanism backbone in the
+literature review, not a data source.</p>
+<p>A caveat that shaped Phase B: at the anchor's stocky proportions (width over
+thickness about 33, length over width 2) the experiment shows <strong>no mode flip
+at all</strong> up to 15 degrees. Every specimen folded progressively. So the anchor
+cannot validate flip prediction; it validates forces, fold counts and the
+absence of a flip where the experiment says there is none. Hunting the flip
+required the slender, crash-box-proportioned geometry of Phase B, and that
+transfer of modelling approach rather than numbers is stated as a limitation.</p>
+<hr />
+<h2>3. Methods</h2>
+<h3>3.1 Geometry</h3>
+<p><strong>Anchor.</strong> Mid-surface square side 48.5 mm, which is the paper's own shell
+dimensioning and reproduces the published 78.57 g specimen mass to four
+figures at rho 2700 and t 1.5 mm. The model's total mass came out at 78.570 g,
+which was the first independent confirmation that the geometry interpretation
+was right. Length 100 mm. Round 2 added a 2.0 mm mid-surface corner radius
+(Section 4.4).</p>
+<p><strong>Golf-class box.</strong> Rectangular thin-walled tube, 80 by 60 mm outer, 180 mm
+long, 1.8 mm wall, frozen in <code>DECISIONS.md</code> D1 with every value labelled by
+basis. The outer section and length are nominal, set from typical published
+C-segment crash box proportions, not Golf VII facts. The wall thickness is an
+inference band of 1.5 to 2.0 mm from VW's own SSP 520 body programme, which
+documents the front rails as 2.0 mm inner member plus 1.5 mm closing plate;
+the box must fold before those rails, so a mid-band 1.8 mm was chosen. A 2.3 mm
+mid-surface corner radius was carried over from the anchor work, and 12 mm
+representative end flanges stand in for the bumper-beam and rail-flange
+attachments (<code>P4_SOURCES.md</code> C5).</p>
+<p>I was granted one bounded geometry adjustment before the first solve and
+<strong>declined it</strong> (<code>DECISIONS.md</code> D2). No new evidence had appeared, and the one
+substantive reason to use it, that a longer or more slender box would make the
+mode flip easier to find, is not a legitimate basis. Choosing geometry to
+produce the phenomenon you are hunting makes the result circular.</p>
+<h3>3.2 Materials</h3>
+<p><strong>Anchor:</strong> AA6060-T6 exactly as published, rho 2700, E 70 GPa, nu 0.33, Mises
+plasticity with the paper's eight-point hardening table from 180 MPa at zero
+plastic strain to 229 MPa at 5.77 percent, modelled rate independent as the
+paper models it.</p>
+<p><strong>Golf box:</strong> DP600 Johnson-Cook. The card in use is <strong>not</strong> the one the
+sources pass originally recorded, and the replacement is one of this project's
+more useful findings. Section 5.2 tells that story.</p>
+<h3>3.3 Mesh, elements and the imperfection policy</h3>
+<p>S4R shells with five through-thickness integration points and enhanced
+hourglass control, matching the paper's five-point Belytschko-Lin-Tsay
+formulation. Anchor mesh 1.5 mm, settled by a three-rung ladder at 3.0, 2.0 and
+1.5 mm plus a second ladder in fully integrated S4 elements. Golf box mesh
+2.0 mm, chosen to hold elements-per-fold constant with the converged anchor
+rung using the Abramowicz-Jones fold half-wavelength formula
+(<code>P4_SOURCES.md</code> C2).</p>
+<p><strong>Imperfection.</strong> Every crush model is seeded with the first elastic buckling
+eigenmode of the same mesh at the same tilt angle, from an Abaqus/Standard
+<code>*BUCKLE</code> run, scaled to one tenth of wall thickness. The shape comes from the
+eigenvalue analysis and the amplitude is the conventional 0.1t; neither was
+chosen by looking at the target. Each tilt angle needs its own eigenvalue job,
+because <code>*IMPERFECTION</code> stores global-frame nodal displacement vectors and a
+mode computed on an upright tube would be applied in the wrong direction to a
+tilted one.</p>
+<h3>3.4 Loading</h3>
+<p><strong>Anchor:</strong> rigid flat plate at a constant 1 m/s, which is the paper's own
+approach; it ran its quasi-static tests in explicit at 1 m/s exploiting
+AA6060-T6's rate insensitivity. The tube is rotated, not the plate, which is
+what the experiment did.</p>
+<p><strong>Golf box:</strong> constant 4166.7 mm/s, the RCAR 15 km/h low-speed structural test
+closing speed, through a fixed 100 mm stroke. This replaced an earlier
+free-flying impactor design; Section 5.1 explains why that had to change.</p>
+<p><strong>Severe condition:</strong> 15555.6 mm/s, the UNECE R94 and US NCAP 56 km/h closing
+speed, 3.73 times the RCAR speed, with everything else held identical.</p>
+<h3>3.5 Post-processing, fixed before Phase A and applied identically to both sides of every comparison</h3>
+<p>Force is the vertical reaction at the plate reference node, or for the
+free-flying runs the impactor deceleration times its mass. Displacement is
+plate travel from first contact, with a 0.5 mm standoff built into every deck
+so first contact is unambiguous. EA is the trapezoidal integral of force over
+the crush window; MCF is EA over the window; CFE is MCF over PCF. <strong>That window
+is 60 mm</strong>, inherited from the anchor specimen, and every EA and SEA figure in
+this report is a 60 mm window quantity. It is a comparative metric, not a stroke
+limit, and Section 13.1 records what went wrong when the two were confused. PCF is
+quoted from an SAE J211 CFC 600 filtered channel with the unfiltered peak also
+recorded, because a prescribed-velocity rigid impactor produces a numerically
+noisy raw contact force. That filtering decision was fixed before Phase A and
+it earned its keep at severe speed, where raw peaks reach 183 kN against a
+filtered 114 kN.</p>
+<p>SEA is computed against <strong>crushed</strong> mass, not total mass. The paper's own
+EA/SEA pair implies 47.16 g, which is its 78.57 g tube scaled by crush over
+length (47.14 g), so that is the published convention and both sides of every
+comparison use it.</p>
+<h3>3.6 The energy audit, and what it rejected</h3>
+<p>Every solve reports artificial energy over internal energy (5 percent target,
+10 percent hard fail), kinetic over internal, total energy drift (below 1
+percent of peak internal, a project declaration stricter than any traced
+floor), and contact energy sanity (<code>P4_SOURCES.md</code> C6). Thresholds were
+declared numerically before the first solve.</p>
+<p>The audit did real work. It rejected the coarse and medium anchor rungs at
+19.5 and 13.5 percent artificial energy, so neither was ever reported as a
+result. Across 129 solves, no run that failed the audit appears anywhere as a
+result.</p>
+<hr />
+<h2>4. Phase A: earning the right to trust the model</h2>
+<h3>4.1 The first fault: element deletion destroyed the tube</h3>
+<p>The paper carries a 7.93 percent failure plastic strain to capture slight
+corner tearing. I included the direct Abaqus equivalent, <code>*SHEAR FAILURE</code> with
+element deletion. The first run deleted <strong>897 of 2112 shell elements</strong>, 42
+percent of the tube. Energy came out at 0.314 kJ against a published 0.913,
+and the force history collapsed into repeated zero-force gaps.</p>
+<p>The cause is that in a shell with five Simpson points the outermost points sit
+exactly on the surfaces, where bending strain at a fold hinge of radius about
+the wall thickness runs to tens of percent, far past 7.93 percent. Deletion
+therefore cascades through every fold hinge instead of staying at the corners.
+Plasticity only, with the overprediction bias stated, for everything after
+(<code>RESULTS_LOG.md</code> D-A1).</p>
+<h3>4.2 The second fault: a mesh-insensitive error is not a mesh error</h3>
+<p>The ladder behaved properly on energy: artificial energy fell 19.5, 13.5, 10.2
+percent and mean force fell 26.58, 23.57, 22.80 kN with refinement. But peak
+force did not move at all: 58.95, 58.50, 58.30 kN against a published 44.02.</p>
+<p>Two hand checks located it before any more solver time was spent. The section
+area is 291 mm2, so the published 44.02 kN is a mean axial stress of 151 MPa,
+<strong>below</strong> the material's 180 MPa yield, while my 58.5 kN is 201 MPa, above it.
+The real tubes collapsed before their walls fully yielded and mine did not. An
+Abaqus/Standard eigenvalue run on the same mesh put first elastic local
+buckling at 72.4 kN, or 249 MPa, against the classical simply-supported plate
+value of 247 MPa for that wall, agreeing to within 1 percent. So the model was
+elastically correct, and a geometrically perfect tube of this material simply
+has no reason to collapse until it squashes. Real extrusions do, because they
+are not perfect.</p>
+<p>Adding the declared eigenmode imperfection moved peak force from 58.50 to
+44.28 kN on the same mesh. Mean force fell from 23.57 to 17.52. Fold count went
+from about two lobes to three, matching the photographs.</p>
+<p>The same round tested contact friction as a controlled comparison: cutting
+aluminium self-contact from the paper's quoted 1.2 to 0.2, a factor of six,
+changed mean force by 0.1 percent. That suspicion was closed rather than left
+hanging.</p>
+<h3>4.3 The oblique gate failed, and the failure had a pattern</h3>
+<p>Round 1 passed 2 of 7 cases. The failures were not seven independent misses.
+Energy was high by a consistent +11.5 percent mean with <strong>all seven errors
+positive</strong>, which is a model property rather than scatter. And peak force
+split cleanly by contact condition: the three corner cases gave -2.4, +11.2 and
++9.5 percent while the three edge cases gave +17.0, +28.3 and +27.7.</p>
+<h3>4.4 Round 2: one correction worked, one backfired</h3>
+<p>Two corrections, both fixed from engineering basis before any round 2 run and
+never adjusted afterwards (<code>RESULTS_LOG.md</code> D-A3):</p>
+<p>A <strong>2.0 mm mid-surface corner radius</strong>, since the paper states outer width and
+wall but never the corner radius, and extrusion practice puts the outer radius
+near 1.5 to 2 times wall thickness. Corners are the stiffest part of a square
+section and carry most of the fold work.</p>
+<p>A <strong>0.15 mm out-of-square loaded end</strong>, modelled as a linear tilt of the end
+plane, at the ISO 2768-m tolerance band for a 50 mm sawn feature, aimed at the
+edge-contact peak force.</p>
+<p>I flagged in advance that the second value had no published source and that
+fixing an unsourced number against known targets is how tuning gets in through
+the back door. So both were written into the generator before running, and a
+discriminating prediction was recorded: the end tilt had to move edge contact
+substantially and leave corner contact nearly alone.</p>
+<p><strong>The corner radius worked cleanly.</strong> On its own it moved energy from +9.7 to
++0.8 percent while costing 2.6 percent of peak force, and dropped artificial
+energy from 7.68 to 5.33 percent. Both gate metrics inside the band with
+margin on each side.</p>
+<p><strong>The end tilt backfired on the axial case, and by far more than I predicted.</strong>
+An attribution run isolating the two corrections showed the corner radius cost
+1.12 kN of peak force and the end tilt cost <strong>4.38 kN</strong>, 10 of the 12.5 point
+drop. I had predicted about 1.5 points, reasoning from 0.18 degrees of
+effective tilt against the experiment's near-axial sensitivity. It was seven
+times that.</p>
+<p>The discriminating prediction did hold where it was aimed: at 5 degrees the
+end tilt moved edge peak force by 2.14 kN and corner peak force by 0.30 kN, a
+7 to 1 split. So the mechanism is real. Round 2 reached 3 of 7, with energy
+now inside the band at six of seven cases and fold counts within one fold
+everywhere.</p>
+<h3>4.5 Why I stopped</h3>
+<p>The result is a structural tension, not an unconverged search:</p>
+<table>
+<thead>
+<tr>
+<th>end tilt</th>
+<th>axial PCF</th>
+<th>5 degree edge PCF</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0.00 mm</td>
+<td>-2.6 percent, pass</td>
+<td>about +17 percent, fail</td>
+</tr>
+<tr>
+<td>0.15 mm</td>
+<td>-12.5 percent, fail</td>
+<td>+8.5 percent, pass</td>
+</tr>
+</tbody>
+</table>
+<p>The axial case wants a perfectly square loaded end and the oblique edge cases
+want an imperfect one, and one specimen cannot be both. No single value of that
+parameter satisfies both ends of the anchor set, and re-picking it to trade one
+against the other is exactly the tuning I had committed against. I reviewed this and took the project forward with the model's licence stated
+explicitly (<code>DECISIONS.md</code> D3).</p>
+<p><strong>The licence, carried into every later claim.</strong> The model reproduces energy
+absorption to roughly 10 percent, fold count to within one fold everywhere,
+progressive folding with no global bending anywhere in 0 to 15 degrees, the
+corner-beats-edge energy ordering, and a clean audit on every run. It does not
+reproduce peak crush force under edge contact at 10 degrees and above. So
+Phases B and C may claim EA(theta), mode, and matched-configuration
+comparisons; they may not claim absolute peak force at a given angle as a
+validated quantity.</p>
+<h3>4.6 The analytical cross-check</h3>
+<p><code>BRIEF.md</code> Section 6 declares a plus or minus 20 percent check against the
+Abramowicz-Jones square-tube theory on the anchor's axial case. Using sigma0 as
+the mean of yield and ultimate, M0 = sigma0 h^2/4 and the traced geometric
+factor, the prediction is 14.28 kN over the full stroke against a measured
+15.34 kN: <strong>+7.4 percent, pass</strong>, consistent with the pre-solve consistency
+calculation that put experiment and theory within 6 percent.</p>
+<p>I also applied the same formula to the Golf box, where it over-predicts by 47
+percent. That is an out-of-domain extension rather than a failed gate: the
+formula assumes a plain square tube, and the Golf box is rectangular, flanged
+and radiused. An earlier entry in my own results log recorded this as a failed
+declared check; that entry applied a Phase A gate to Phase B and is corrected
+in place.</p>
+<hr />
+<h2>5. Phase B: the diagnosis</h2>
+<h3>5.1 The loading design that would have wasted the phase</h3>
+<p>The first Phase B configuration was a free-flying 575 kg impactor at the RCAR
+speed, carrying 4.99 kJ derived from an energy-share chain. The single axial
+calibration run showed the box stopped it and rebounded after 48.59 mm.</p>
+<p>That is a fatal design flaw for a sweep, and it is mine. With a fixed impact
+energy, EA is pinned at that energy for <strong>every</strong> angle where the box still
+stops the impactor. EA(theta), the brief's headline curve, would have come out
+flat by construction across exactly the range where the critical angle lives.
+Raising the impactor mass until the axial case used half the stroke would need
+about 1040 kg, implying a 66 percent energy share for one box, which is not
+credible.</p>
+<p>The fix (<code>RESULTS_LOG.md</code> D-B2) was a constant-velocity impactor at the same
+RCAR speed through a fixed 100 mm stroke, which mirrors the validated Phase A
+method exactly, makes EA(theta) directly comparable, and runs 2.3 times faster.
+Nothing was lost: each force-displacement curve still yields the crush distance
+at which absorbed energy reaches the RCAR share, which is the intrusion the
+rail actually sees. Because the axial case was run alone before the batch, this
+cost one run rather than six.</p>
+<h3>5.2 The material card was wrong, and the model found it</h3>
+<p>The same calibration run produced a mean crush force of 102.6 kN against a
+pre-solve estimate of 54. Evaluating the recorded Johnson-Cook set as a
+stress-strain curve rather than reading its parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Recorded set</th>
+<th>DP600 grade</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>flow stress at 2 percent plastic strain</td>
+<td>781 MPa</td>
+<td>below UTS, so under about 650</td>
+</tr>
+<tr>
+<td>implied engineering UTS</td>
+<td><strong>846 MPa</strong></td>
+<td>600 to 700 MPa</td>
+</tr>
+</tbody>
+</table>
+<p>Its flow stress at 2 percent plastic strain already exceeded DP600's entire
+UTS. That set describes a DP800 or DP980 class steel. The ledger row had been
+marked TRACED-MEDIUM with a standing action to verify against the primary
+before the report stage, and this was that verification failing.</p>
+<p>The root cause, established with the coordinator session, is that the recorded
+set was a garbled hybrid: its A and n came from the true primary's <strong>tube</strong>
+fit while its B and m matched nothing in it. The replacement is Thompson 2006
+(University of Waterloo MASc thesis), DP600 characterized 0.003 to 1500 /s,
+whose Table 5.1 sheet fit is A 165, B 968.57, n 0.206, c 0.0145, m 0.868. A
+crash can is stamped sheet, so the sheet fit is the right column. I verified
+every number against the archived primary rather than accepting the relay.</p>
+<p>One open item came with that relay: the reference strain rate was said to be
+unstated, leaving an 8 percent ambiguity to be resolved by fitting against a
+published curve. It is stated outright in the thesis's own modelling chapter,
+"the reference strain rate in the constitutive models was 0.001 ms-1 because
+of the unit system", which in an mm-ms-g system is <strong>1.0 per second</strong>. So the
+value is traced, not assumed, and the ambiguity does not exist.</p>
+<p>Read at the datasheet rate, the card gives 398 MPa proof and 647 MPa UTS,
+both inside the DP600 grade definition. The old card missed on both.</p>
+<p><strong>What the swap changed, and what it did not.</strong> Absolute energy fell 13 to 18
+percent at every angle, consistent with a 17 percent softer UTS. Retention
+barely moved: 70 versus 74 percent at 10 degrees, 49 versus 49 at 20, 34 versus
+34 at 25. <strong>The shape of the collapse is a property of the geometry, not the
+steel.</strong> Both sweeps are preserved and together form a material-sensitivity
+comparison.</p>
+<h3>5.3 The mode discriminator, and why it was validated first</h3>
+<p>Fold count cannot separate folding from bending, because both produce wall
+waviness. Lateral drift cannot either, because an obliquely loaded tube moves
+sideways for purely geometric reasons. I built and discarded two classifiers
+before arriving at one I trusted. The second failed in an instructive way: it
+looked for a kink between the tube's half-lengths, which a hinge forming at the
+<strong>fixed end</strong> does not produce, so it confidently reported folding where the
+box had hinged at its base.</p>
+<p>The measure finally used is deliberately blunt. In the tube's own frame, take
+the centroid of the fixed-end ring and the loaded-end ring, and compute how
+much closer they got along the original axis (shortening) against how far the
+loaded end swung sideways off it (offset):</p>
+<pre><code>fold_ratio = shorten / (shorten + offset)
+</code></pre>
+<p>Folding converts impactor travel into shortening. Bending rotates the box about
+a hinge, so the ends stay apart while the top swings out.</p>
+<p><strong>It was validated on the Phase A anchor before being used</strong>, where the
+published experiment reports progressive folding at every tested angle. It
+returned folding for all cases, with ratios spanning 0.763 to 0.997. That
+calibrates the threshold against a known answer instead of asserting one.</p>
+<h3>5.4 The result: a sharp transition at 6.25 degrees</h3>
+<table>
+<thead>
+<tr>
+<th>angle</th>
+<th>EA kJ</th>
+<th>PCF kN</th>
+<th>CFE</th>
+<th>EA vs 0 deg</th>
+<th>shorten mm</th>
+<th>offset mm</th>
+<th>fold ratio</th>
+<th>mode</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>5.713</td>
+<td>118.2</td>
+<td>0.806</td>
+<td>100%</td>
+<td>89.53</td>
+<td>0.00</td>
+<td>1.000</td>
+<td>FOLD</td>
+</tr>
+<tr>
+<td>5</td>
+<td>5.388</td>
+<td>113.6</td>
+<td>0.790</td>
+<td>94%</td>
+<td>85.47</td>
+<td>9.74</td>
+<td>0.898</td>
+<td>FOLD</td>
+</tr>
+<tr>
+<td>6.25</td>
+<td>5.278</td>
+<td>111.2</td>
+<td>0.791</td>
+<td>92%</td>
+<td>81.06</td>
+<td>42.01</td>
+<td>0.659</td>
+<td>MIXED</td>
+</tr>
+<tr>
+<td>7.5</td>
+<td>5.149</td>
+<td>106.9</td>
+<td>0.803</td>
+<td>90%</td>
+<td>77.89</td>
+<td>54.08</td>
+<td>0.590</td>
+<td>MIXED</td>
+</tr>
+<tr>
+<td>8.75</td>
+<td>4.786</td>
+<td>98.3</td>
+<td>0.811</td>
+<td>84%</td>
+<td>74.97</td>
+<td>65.03</td>
+<td>0.536</td>
+<td>BEND</td>
+</tr>
+<tr>
+<td>10</td>
+<td>3.980</td>
+<td>95.5</td>
+<td>0.694</td>
+<td>70%</td>
+<td>75.41</td>
+<td>92.33</td>
+<td>0.450</td>
+<td>BEND</td>
+</tr>
+<tr>
+<td>15</td>
+<td>3.548</td>
+<td>77.1</td>
+<td>0.767</td>
+<td>62%</td>
+<td>69.84</td>
+<td>97.86</td>
+<td>0.416</td>
+<td>BEND</td>
+</tr>
+<tr>
+<td>20</td>
+<td>2.795</td>
+<td>72.0</td>
+<td>0.647</td>
+<td>49%</td>
+<td>67.10</td>
+<td>113.06</td>
+<td>0.372</td>
+<td>BEND</td>
+</tr>
+<tr>
+<td>25</td>
+<td>1.933</td>
+<td>45.5</td>
+<td>0.707</td>
+<td>34%</td>
+<td>61.11</td>
+<td>113.64</td>
+<td>0.350</td>
+<td>BEND</td>
+</tr>
+<tr>
+<td>30</td>
+<td>1.605</td>
+<td>34.5</td>
+<td>0.774</td>
+<td>28%</td>
+<td>53.12</td>
+<td>107.74</td>
+<td>0.330</td>
+<td>BEND</td>
+</tr>
+</tbody>
+</table>
+<p>At 5 degrees the box shortens 85 mm and drifts 10. At 10 degrees the top swings
+<strong>92 mm</strong>, nearly the whole crush stroke going into rotation. The fold ratio
+falls at -0.191 per degree across the transition against -0.020 per degree
+below it and -0.004 to -0.007 per degree above 10 degrees.</p>
+<p><strong>The mode change and the energy loss happen at different angles</strong>, and this is
+the single most useful output of Phase B. At 6.25 degrees the box has already
+stopped folding yet still absorbs 92 percent of its axial energy. The energy
+penalty arrives between 8.75 and 10 degrees. Crush force efficiency confirms
+the lag, holding flat at 0.79 to 0.81 through the flip and only dropping at 10
+degrees. So a design fix must target hinge formation at about 6 degrees, not
+the visible energy cliff at 10; aiming at the symptom would aim three degrees
+too late, at a box that has already failed.</p>
+<h3>5.5 The critical angle is not a numerical accident</h3>
+<p>The brief required a two-seed check near the flip, and the risk register listed
+seed instability as a threat to the headline number. Seeds share the same
+eigenvalue analysis and differ in which mode is applied.</p>
+<table>
+<thead>
+<tr>
+<th>angle</th>
+<th>EA seed 1</th>
+<th>EA seed 2</th>
+<th>diff</th>
+<th>ratio seed 1</th>
+<th>ratio seed 2</th>
+<th>modes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5</td>
+<td>5.3881</td>
+<td>5.3904</td>
+<td>+0.04%</td>
+<td>0.898</td>
+<td>0.900</td>
+<td>FOLD / FOLD</td>
+</tr>
+<tr>
+<td>6.25</td>
+<td>5.2778</td>
+<td>5.2903</td>
+<td>+0.24%</td>
+<td>0.659</td>
+<td>0.659</td>
+<td>MIXED / MIXED</td>
+</tr>
+<tr>
+<td>7.5</td>
+<td>5.1515</td>
+<td>5.1494</td>
+<td>-0.04%</td>
+<td>0.590</td>
+<td>0.590</td>
+<td>MIXED / MIXED</td>
+</tr>
+<tr>
+<td>8.75</td>
+<td>4.7864</td>
+<td>4.7877</td>
+<td>+0.03%</td>
+<td>0.536</td>
+<td>0.537</td>
+<td>BEND / BEND</td>
+</tr>
+</tbody>
+</table>
+<p>Maximum energy difference 0.24 percent, maximum fold-ratio difference 0.002,
+zero mode disagreements across the whole transition.</p>
+<p>The contrast with Phase A is the physically interesting part. There the
+imperfection was decisive, moving axial peak force by 25 percent, because a
+symmetric box under axial load has nothing else to select a collapse mode.
+Under oblique load the eccentricity of the load itself breaks the symmetry and
+swamps a 0.18 mm perturbation. The same modelling choice dominates one phase
+and is irrelevant in the other, for a reason that makes sense.</p>
+<h3>5.6 The mechanism: two plastic zones and a rigid middle</h3>
+<p>Plastic work along the box, binned into tenths of length, 0 at the fixed end:</p>
+<table>
+<thead>
+<tr>
+<th>bins</th>
+<th>0 deg</th>
+<th>5 deg</th>
+<th>6.25 deg</th>
+<th>10 deg</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0 to 1, base</td>
+<td>60.6%</td>
+<td>60.2%</td>
+<td>60.5%</td>
+<td>39.0%</td>
+</tr>
+<tr>
+<td>4 to 6, middle</td>
+<td>12.1%</td>
+<td>5.8%</td>
+<td>3.3%</td>
+<td>3.6%</td>
+</tr>
+<tr>
+<td>7 to 9, loaded end</td>
+<td>4.2%</td>
+<td>13.2%</td>
+<td>23.4%</td>
+<td>43.4%</td>
+</tr>
+</tbody>
+</table>
+<p>This is not a single mid-length hinge, which is what I had assumed. It is two
+plastic zones with a middle that stays essentially elastic and rotates as a
+near-rigid body. Three facts follow. The base carries 60 percent of the plastic
+work at 0, 5 and 6.25 degrees alike, so it is <strong>not</strong> what fails. The loaded end
+goes 4.2 to 43.4 percent as the angle opens, so it <strong>is</strong>. And the middle third
+does under 4 percent at every angle past 5 degrees, which is dead material and
+therefore a mass budget.</p>
+<p>It also explains the lag in Section 5.4: at 6.25 degrees the loaded-end zone
+has formed but the base is still folding normally, so energy holds; by 10
+degrees the loaded end dominates and the base is starved.</p>
+<hr />
+<h2>6. Phase C: the design fix</h2>
+<h3>6.1 Constraints and candidates</h3>
+<p>Both constraints from <code>BRIEF.md</code> Section 3 are hard: no mass increase over
+683.8 g, and no worse axial peak force than 118.2 kN. Six candidates were run,
+all mass-neutral by construction, each aimed at the loaded-end zone rather than
+at the energy cliff.</p>
+<table>
+<thead>
+<tr>
+<th>Cand</th>
+<th>Change</th>
+<th>axial EA</th>
+<th>axial PCF</th>
+<th>transition</th>
+<th>verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A</td>
+<td>wall 1.80/1.30/2.30 graded</td>
+<td>-32.1%</td>
+<td>-14.9%</td>
+<td>past 10 deg</td>
+<td>FAIL, axial EA</td>
+</tr>
+<tr>
+<td>B</td>
+<td>wall 1.475 plus 1.50 mm web</td>
+<td>+6.0%</td>
+<td><strong>+15.1%</strong></td>
+<td>not moved</td>
+<td>FAIL, axial PCF</td>
+</tr>
+<tr>
+<td>C</td>
+<td>0.9 mm beads at 0.78, 0.90</td>
+<td>-0.1%</td>
+<td>+0.8%</td>
+<td>6.25 to 7.5</td>
+<td>partial</td>
+</tr>
+<tr>
+<td>D</td>
+<td>wall 1.80/1.55/2.05 graded</td>
+<td>-3.6%</td>
+<td>-4.4%</td>
+<td>6.25 to 7.5</td>
+<td>FAIL, EA at angle</td>
+</tr>
+<tr>
+<td>E</td>
+<td>D plus C beads</td>
+<td>-3.7%</td>
+<td>-4.3%</td>
+<td>same as D</td>
+<td>FAIL</td>
+</tr>
+<tr>
+<td><strong>G</strong></td>
+<td><strong>1.35 mm beads at 0.78, 0.90</strong></td>
+<td><strong>-0.4%</strong></td>
+<td><strong>-0.1%</strong></td>
+<td><strong>7.5 to 8.75</strong></td>
+<td><strong>WINNER</strong></td>
+</tr>
+<tr>
+<td>F</td>
+<td>0.9 mm beads at four stations</td>
+<td>-0.2%</td>
+<td>+0.8%</td>
+<td>7.5 to 8.75</td>
+<td>FAIL, EA at angle</td>
+</tr>
+</tbody>
+</table>
+<h3>6.2 A success criterion that was declared early and still wrong</h3>
+<p>The criterion written before solving was: move the transition, hold mass, do
+not worsen axial peak force. Candidate A satisfies all three literally, with
+peak force <em>lower</em> at 100.6 kN, and is plainly not a win, because it loses 32
+percent of axial energy. The criterion never required preserving the box's
+primary job.</p>
+<p>I added the fourth condition and applied it to all candidates. Declaring
+criteria in advance is right, and it does not remove the duty to check whether
+the criterion captures what actually matters.</p>
+<h3>6.3 Grading disarms triggers, and placement decides affordability</h3>
+<p>Two comparisons carry the mechanism findings, and both were designed so the
+answer would be attributable.</p>
+<p><strong>D versus E.</strong> E is D plus C's beads. They are indistinguishable: energy
+differs by at most 0.31 percent and fold ratio by at most 0.009 at every angle.
+C's beads moved the 6.25 degree fold ratio from 0.659 to 0.883 on their own and
+contribute <strong>nothing</strong> once the loaded third is thickened to 2.05 mm. A bead
+works by being locally weak; raising the surrounding thickness removes that
+contrast. The two fixes cancel rather than combine. D was run separately
+specifically because Phase A round 2 had already taught the cost of changing
+two things at once.</p>
+<p><strong>F versus G.</strong> Identical trigger physics, differing only in placement. F
+spread four bands down the whole box at the natural fold pitch and lost up to
+25.1 percent of energy; G put deeper beads only in the loaded fifth and lost
+nothing. Triggers reduce crush force, which is their purpose, and force
+integrated over distance is energy. <strong>The design rule: weaken precisely the
+part that was going to fail, and nothing else.</strong></p>
+<h3>6.4 The finding I did not predict: mode and energy are separate levers</h3>
+<p>At 8.75 degrees the untouched baseline is classified as bending and absorbs
+4.786 kJ. Candidate F is classified mixed, folds more cleanly, shortens by
+essentially the same amount (75.6 against 75.0 mm), and absorbs 3.964 kJ.
+Folding more did not absorb more.</p>
+<p>Across all six candidates, every mechanism that moved the mode boundary did so
+by changing where the box prefers to deform, and the only candidate that
+genuinely raised energy (B, the internal web) did it by making the box
+stronger, which spiked axial peak force by 15 percent and broke a hard
+constraint.</p>
+<p>Phase B correctly located the flip. The inference that stopping the flip would
+recover the energy, which the brief and I both made, does not hold.</p>
+<h3>6.5 The winner, and what it is worth</h3>
+<p>G is two embossed bead bands at 0.78 and 0.90 of length, 1.35 mm deep, which is
+0.75 of wall thickness, mass-neutral because embossing redistributes material.</p>
+<table>
+<thead>
+<tr>
+<th>angle</th>
+<th>baseline EA kJ</th>
+<th>G EA kJ</th>
+<th>diff</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>5.713</td>
+<td>5.692</td>
+<td>-0.4%</td>
+</tr>
+<tr>
+<td>5</td>
+<td>5.388</td>
+<td>5.407</td>
+<td>+0.3%</td>
+</tr>
+<tr>
+<td>6.25</td>
+<td>5.278</td>
+<td>5.306</td>
+<td>+0.5%</td>
+</tr>
+<tr>
+<td>7.5</td>
+<td>5.149</td>
+<td>5.173</td>
+<td>+0.5%</td>
+</tr>
+<tr>
+<td>8.75</td>
+<td>4.786</td>
+<td>4.761</td>
+<td>-0.5%</td>
+</tr>
+<tr>
+<td>10</td>
+<td>3.980</td>
+<td>3.834</td>
+<td>-3.7%</td>
+</tr>
+<tr>
+<td>15</td>
+<td>3.548</td>
+<td>3.409</td>
+<td>-3.9%</td>
+</tr>
+<tr>
+<td>20</td>
+<td>2.795</td>
+<td>2.868</td>
+<td>+2.6%</td>
+</tr>
+<tr>
+<td>25</td>
+<td>1.933</td>
+<td>1.935</td>
+<td>+0.1%</td>
+</tr>
+<tr>
+<td>30</td>
+<td>1.605</td>
+<td>1.607</td>
+<td>+0.1%</td>
+</tr>
+</tbody>
+</table>
+<p>Mean across the window: baseline 4.018 kJ, G 3.999 kJ, <strong>-0.5 percent</strong>.</p>
+<p>G moves the transition from 6.25 degrees to between 7.5 and 8.75, at identical
+mass, axial peak force within 0.1 percent and energy within 0.5 percent. It
+<strong>does not flatten EA(theta)</strong>; the cliff at 10 degrees is unchanged. The brief
+asked Phase C to push the critical angle outward <em>and</em> flatten the curve. G
+achieves the first and not the second.</p>
+<h3>6.6 The severe-speed check, which caught a regime-limited result</h3>
+<table>
+<thead>
+<tr>
+<th>angle</th>
+<th>15 km/h base</th>
+<th>G</th>
+<th>delta</th>
+<th>56 km/h base</th>
+<th>G</th>
+<th>delta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>6.25</td>
+<td>0.659</td>
+<td>0.875</td>
+<td>+0.216</td>
+<td>0.787</td>
+<td>0.881</td>
+<td>+0.094</td>
+</tr>
+<tr>
+<td>7.5</td>
+<td>0.590</td>
+<td>0.773</td>
+<td>+0.183</td>
+<td>0.657</td>
+<td>0.707</td>
+<td>+0.050</td>
+</tr>
+<tr>
+<td>8.75</td>
+<td>0.536</td>
+<td>0.521</td>
+<td>-0.015</td>
+<td>0.579</td>
+<td>0.664</td>
+<td>+0.085</td>
+</tr>
+</tbody>
+</table>
+<p>G's mean fold-ratio advantage falls from +0.128 to <strong>+0.076</strong>, a 40 percent
+reduction. It still folds further than the baseline at every angle, so the
+effect is not a pure low-speed artifact, but it is materially smaller in the
+regime that matters most for injury.</p>
+<p><strong>The baseline improves on its own at speed</strong>, its fold ratio rising by +0.128,
++0.067 and +0.043 and its energy by +4.0, +4.8 and +9.4 percent. Inertia
+stabilizes folding: the box's own mass resists the sideways swing long enough
+for folds to form. High speed does part of G's job for free.</p>
+<p><strong>That is inertia, not material rate hardening, and the traced card proves it.</strong>
+The Johnson-Cook C of 0.0145 predicts +1.9 percent flow stress for this speed
+ratio. The observed energy change is two to five times larger, so the rate term
+cannot account for it. This is the explicit rate line item <code>BRIEF.md</code> Section 4
+demanded rather than a silent correction factor.</p>
+<p><strong>And G costs energy at severe speed:</strong> -9.5, -18.6 and -17.4 percent at the
+three angles, where at RCAR speed the two were within 0.5 percent. G's beads
+trigger folds early, which is free when inertia is weak, but at high speed the
+baseline was going to fold anyway, so the beads subtract force without buying
+mode stability that was still needed.</p>
+<p><strong>Verdict: G is a regime-specific win.</strong> At the RCAR condition, the regime
+crash boxes are explicitly sized for, it meets every declared constraint. At
+56 km/h it would be rejected.</p>
+<hr />
+<h2>7. What this is worth, and what it is not</h2>
+<p>The engineering inference P2 made was a cost saving from a lighter part. P4
+cannot make an equivalent claim, and saying so plainly is the honest result.</p>
+<p><strong>What the project delivers:</strong> a quantified diagnosis of where and how sharply
+this box class fails under angled load, on a validated discriminator, with the
+critical angle shown to be seed-independent; a mechanism explanation (two
+plastic zones, a rigid middle, the loaded end being what changes); a
+transferable design rule; the mode-energy independence finding; and a
+mass-neutral change worth about two degrees at low speed.</p>
+<p><strong>What it does not deliver:</strong> more energy kept out of the frame rail. No
+candidate achieved that within the constraints, and the one that raised energy
+broke the peak-force constraint by 15 percent. Since the payoff quantity for
+repair cost and cabin integrity is energy absorbed, not mode, the practical
+value of G is limited to the low-speed regime and is best stated as a
+robustness margin rather than a saving.</p>
+<p>Context that needs care: the RCAR low-speed structural test is itself run at a
+<strong>10 degree</strong> barrier angle, beyond this box class's 6.25 degree transition.
+That is a test condition, not a performance floor, and no traced source sets a
+required critical angle. The honest observation is that the industry's own
+low-speed test angle sits past the transition, not that the box fails a
+published requirement.</p>
+<hr />
+<h2>8. Predictions I wrote down and got wrong</h2>
+<ol>
+<li><strong>End-tilt cost.</strong> I predicted about 1.5 points of axial peak force from
+   0.18 degrees of effective tilt. It cost 10 points, seven times more. The
+   model's axial peak force is far more sensitive to out-of-square loading than
+   the experiment's own angle sweep implies.</li>
+<li><strong>Artificial energy.</strong> I claimed an S4 versus S4R comparison ruled out
+   artificial energy as a source of force overshoot. That comparison confounded
+   element type with mesh size. At equal mesh, about a fifth of the residual is
+   hourglass inflation. Corrected in the log.</li>
+<li><strong>The hinge location.</strong> I assumed a single mid-length hinge. It is two
+   plastic zones with a rigid middle, and the second zone is at the loaded end.</li>
+<li><strong>Mode implies energy.</strong> I assumed stopping the flip would recover the
+   energy. Six candidates say otherwise, and the clearest counterexample has a
+   bending baseline out-absorbing a folding candidate.</li>
+<li><strong>Combining A and C.</strong> I expected the grading and the triggers to be
+   complementary because they failed in opposite regions. The grading disarmed
+   the triggers completely.</li>
+<li><strong>The success criterion.</strong> Declared before solving, and still missing the
+   requirement that mattered most.</li>
+<li><strong>The analytical check.</strong> I recorded it as failing when the Golf box came
+   out 47 percent high. That applied a Phase A gate to Phase B; the anchor
+   check passes at +7.4 percent.</li>
+</ol>
+<p>Two process errors also belong here. I designed the Phase B loading in a way
+that would have made the headline curve flat by construction, caught only
+because a single calibration run preceded the batch. And I changed two model
+corrections at once in Phase A round 2, which cost an extra diagnostic run to
+attribute and directly motivated the D-versus-E design in Phase C.</p>
+<hr />
+<h2>9. Limitations</h2>
+<ol>
+<li>Geometry is a labelled reconstruction. Claims are about the Golf-class box
+   family, not the exact Golf R part; OEM drawings are not public.</li>
+<li>The anchor licence (<code>DECISIONS.md</code> D3): absolute peak force at a given
+   angle is not a validated quantity.</li>
+<li>Continuous shell, no spot-welded seam. A real seamed box folds less cleanly,
+   so its true critical angle is likely at or below 6.25 degrees. The estimate
+   is conservative, not flattering.</li>
+<li>The DP600 card is a labelled "DP-class crash-can steel" inference; the box's
+   actual grade is not published anywhere found.</li>
+<li>Plasticity only, no damage model; no traced damage parameter set exists for
+   this grade. Bias is toward overprediction of energy.</li>
+<li>The 100 mm stroke is 56 percent of box length; behaviour beyond that,
+   including densification, is not characterized.</li>
+<li>The mode discriminator is calibrated on one anchor geometry. Its threshold
+   should be re-validated before being applied to a very different section.</li>
+</ol>
+<hr />
+<h2>10. What I would do next</h2>
+<p><strong>Attack the energy cliff directly, not the mode boundary.</strong> The mode-energy
+independence finding says the two are separate problems, and only the second
+one is worth money. That means asking what sets the force level once the box
+has begun to hinge, rather than trying to prevent the hinge.</p>
+<p><strong>Test the rigid middle.</strong> It does under 4 percent of the plastic work at every
+angle past 5 degrees. Candidates A and D tried to spend that budget on the
+loaded end and lost energy doing it. A shorter box, or one whose middle is
+removed rather than thinned, is a different use of the same observation.</p>
+<p><strong>Resolve the edge-contact peak force limitation</strong>, which is the one thing
+blocking a full Phase A pass. The end-flatness hypothesis is live but untested
+at other amplitudes, and I deliberately did not chase it because the amplitude
+had no source. A measured specimen would settle it.</p>
+<p><strong>Re-run the sweep with a spot-welded seam</strong> to test whether the conservative
+bias in limitation 3 is small or large.</p>
+<hr />
+<h2>11. Phase D: the paid round, the industry comparison, and the attachment finding</h2>
+<p>Sections 1 to 10 were written when Phase C closed with candidate G, a
+mass-neutral fix worth about two degrees and no energy. Three follow-up questions then reopened the work, and the answers changed the
+conclusion. This section records that, and Section 12 restates the headline.</p>
+<h3>11.1 The paid round: what 5 percent more mass buys</h3>
+<p>Phase C held mass absolutely fixed. That constraint, not the design space, was
+capping the result. Relaxing it to plus 5 percent while KEEPING the axial peak
+force cap produced the project's best design.</p>
+<p><strong>PW: a 1.247 mm internal web across the loaded third, plus the G bead bands.
+718.0 g, exactly plus 5.00 percent. Axial peak force 118.42 kN against the
+118.19 baseline, inside the plus 1 percent cap.</strong></p>
+<table>
+<thead>
+<tr>
+<th>angle</th>
+<th>0</th>
+<th>5</th>
+<th>6.25</th>
+<th>7.5</th>
+<th>8.75</th>
+<th>10</th>
+<th>15</th>
+<th>20</th>
+<th>25</th>
+<th>30</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EA baseline</td>
+<td>5.713</td>
+<td>5.388</td>
+<td>5.278</td>
+<td>5.149</td>
+<td>4.786</td>
+<td>3.980</td>
+<td>3.548</td>
+<td>2.795</td>
+<td>1.933</td>
+<td>1.605</td>
+</tr>
+<tr>
+<td>EA PW</td>
+<td>5.696</td>
+<td>5.361</td>
+<td>5.393</td>
+<td>5.464</td>
+<td>5.410</td>
+<td>5.341</td>
+<td>4.693</td>
+<td>3.155</td>
+<td>1.964</td>
+<td>1.625</td>
+</tr>
+<tr>
+<td>PW vs base</td>
+<td>-0.3%</td>
+<td>-0.5%</td>
+<td>+2.2%</td>
+<td>+6.1%</td>
+<td>+13.0%</td>
+<td><strong>+34.2%</strong></td>
+<td>+32.3%</td>
+<td>+12.9%</td>
+<td>+1.6%</td>
+<td>+1.3%</td>
+</tr>
+</tbody>
+</table>
+<p>Retention against own axial energy:</p>
+<ul>
+<li>baseline 100 / 94 / 92 / 90 / 84 / <strong>70</strong> / 62 / 49 / 34 / 28 percent</li>
+<li>PW 100 / 94 / 95 / 96 / 95 / <strong>94</strong> / 82 / 55 / 34 / 29 percent</li>
+</ul>
+<p><strong>The energy cliff at 10 degrees is removed.</strong> This is the flattening
+<code>BRIEF.md</code> Section 3 asked for and Phase C could not deliver. Mean across the
+window: +9.8 percent absolute energy and +4.5 percent SEA, so it wins on both
+conventions rather than only the one that flatters a heavier part.</p>
+<p><strong>It also survives severe speed, where the free fix died.</strong> At 56 km/h G loses
+9.5 and 17.4 percent of energy at 6.25 and 8.75 degrees; PW gains 0.8 and 5.4
+percent and still folds (fold ratio 0.849) where the baseline bends (0.579).</p>
+<p><strong>And it settles the question candidate D left open.</strong> D thickened the loaded
+third by thinning the middle and lost energy at angle. PG, the same grading
+paid for with mass instead of by robbing the middle, gains 11.3 percent at
+8.75 degrees. D failed because of the thinned middle, not the grading.</p>
+<h3>11.2 The industry comparison, done properly</h3>
+<p>The published claims (<code>P4_SOURCES.md</code> D1 to D3) run from +27 percent to +213
+percent SEA. PW's SEA gain peaks at <strong>+27.8 percent at 10 degrees</strong>, mean +4.5
+percent, and is NEGATIVE below 8 degrees. So PW matches the foam-filled conical
+figure almost exactly and does not approach the multi-cell or hierarchical
+numbers.</p>
+<p>Four things make that comparison less lopsided than it looks, and three of them
+are now backed by this project's own runs rather than by argument.</p>
+<p><strong>Those gains are measured against a plain square tube.</strong> So the plain tube was
+built in this toolchain, same mass, same material, same conditions (Section
+11.3). It is a genuinely different animal from a production-proportioned
+flanged box.</p>
+<p><strong>Most of those studies do not impose a peak force cap.</strong> Two candidates here
+reproduced the literature's energy direction and were rejected on exactly that
+constraint: candidate B, the full-length internal web (+6.0 percent axial
+energy, +15.1 percent axial peak force) and candidate TB, the widening taper
+(+2.9 percent energy, +2.0 percent peak force). That is a claim from runs, not
+from reading.</p>
+<p><strong>The industry's own document is far more sober than the papers.</strong> European
+Aluminium's crash management systems release (2013, archived locally) states
+that foam-filled sections absorb "slightly more impact energy than empty
+sections of similar mass" and that "properly designed multi-cell cross sections
+are more efficient energy absorbers", with foam's real advantage being
+off-axis. It also reports that in full-vehicle simulation the RECTANGULAR
+section outperforms hexagonal and octagonal ones, which "undergo torsion and
+buckling", and concludes that "in practice, the benefits resulting from special
+cross section designs proved to be not cost efficient. Thus axial folding
+aluminium crash boxes show usually of a single or two-cell design with a
+rectangular cross section."</p>
+<p><strong>So PW is the production archetype.</strong> A rectangular box with a second cell and
+folding initiators is what the industry document describes as the production
+solution, arrived at here independently from the mechanism evidence. The same
+document's recommended lever, "the addition of material where required enables
+a significant performance improvement" and "reinforced corners increase the
+specific energy absorption capacity", is exactly what PG and PW do.</p>
+<p><strong>Foam could not be rebutted directly</strong>, because the archived foam source
+carries density and modulus but no plateau stress or densification strain, and
+building a crushable foam model would have meant inventing the constant that
+governs the answer. That exclusion is reported rather than worked around.</p>
+<h3>11.3 The finding that reframes the project: it is the attachment, not the tube</h3>
+<p>The plain square tube reference (same 683.8 g, same steel, no flanges) turned
+out to be far MORE angle-robust than the production-style baseline: retention
+100 / 102 / 96 / 84 / <strong>70</strong> percent at 0 / 6.25 / 10 / 20 / 30 degrees against
+the baseline's 100 / 92 / 70 / 49 / <strong>28</strong>, and +114 percent energy at 30
+degrees.</p>
+<p>That inverted the assumption the project was built on, so it was attributed
+properly with a two-by-two factorial rather than guessed at, because the plain
+tube changed both section shape and end attachment at once.</p>
+<table>
+<thead>
+<tr>
+<th>cell</th>
+<th>section</th>
+<th>flanges</th>
+<th>ratio 6.25</th>
+<th>ratio 10</th>
+<th>ratio 20</th>
+<th>axial PCF</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>baseline</td>
+<td>rectangular</td>
+<td>yes</td>
+<td>0.659</td>
+<td>0.450</td>
+<td>0.372</td>
+<td>118.2</td>
+</tr>
+<tr>
+<td>FA</td>
+<td>rectangular</td>
+<td>NO</td>
+<td>0.881</td>
+<td>0.779</td>
+<td>0.495</td>
+<td>203.9</td>
+</tr>
+<tr>
+<td>FB</td>
+<td>square</td>
+<td>yes</td>
+<td>0.846</td>
+<td>0.509</td>
+<td>0.401</td>
+<td>119.7</td>
+</tr>
+<tr>
+<td>R</td>
+<td>square</td>
+<td>NO</td>
+<td>0.882</td>
+<td>0.799</td>
+<td>0.527</td>
+<td>196.4</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Removing the flange</strong> is worth +0.222 / +0.329 / +0.123 on fold ratio and up
+to +49.5 percent energy at 20 degrees, and it does that for either section
+shape. <strong>Making it square</strong> is worth +0.187 / +0.059 / +0.029 with the flange
+present and essentially nothing (+0.001 / +0.020 / +0.032) once the flange is
+gone.</p>
+<p><strong>The end attachment governs the oblique failure. Section shape matters only
+because the flange is soft.</strong></p>
+<p><code>P4_SOURCES.md</code> C5 flagged the flange representation as an ASSUMPTION with
+stated limits. It is the most load-bearing assumption in the study. A real box
+bolts to a rail documented in SSP 520 as 2.0 mm inner member plus a 1.5 mm
+closing plate, much stiffer than the modelled 1.8 mm free-standing shell flange
+but not the perfectly clamped rim of FA. <strong>The 6.25 degree critical angle is
+therefore the pessimistic bound; a real installation sits between 6.25 and
+beyond 10 degrees.</strong> Section 5's headline number must be read that way.</p>
+<h3>11.4 Why the attachment cannot simply be stiffened</h3>
+<p>Two further studies closed this line.</p>
+<p><strong>A flange stiffness sweep found a clean monotonic trade with no window.</strong> Peak
+force runs 118.2, 132.5, 152.0, 200.7 kN for flanges of 1.8, 2.7, 3.6, 5.4 mm,
+while energy at 20 degrees runs 2.795, 3.410, 3.829 kJ. Every step buys angle
+performance and pays proportionally in head-on force. The mildest step already
+exceeds the plus 1 percent cap twelvefold, and beyond about three times
+thickness the flange stops acting as a fuse at all (5.4 mm gives essentially
+the no-flange result).</p>
+<p><strong>An attempt to decouple the two failed, as predicted in advance.</strong> The
+hypothesis was that a bead near the base, where 60 percent of the axial plastic
+work happens, could set the collapse load and cap peak force while the flange
+kept supplying rotational restraint. The prediction recorded before solving was
+that peak force would return near 118 kN if the hypothesis held. It did not:
+beads pulled peak force down only 8.0 and 3.5 percent against flange increases
+of 29 and 12 percent. A local trigger cannot relieve a constraint that is not
+where the trigger is.</p>
+<p>So the flange trade is fundamental for this design family across all three
+routes tried.</p>
+<h2>12. Restated conclusion</h2>
+<p><strong>What the project delivers.</strong></p>
+<ol>
+<li>A quantified diagnosis: this box class stops folding at about 6.25 degrees
+   in the modelled configuration, sharply (an order of magnitude steeper than
+   the surrounding trend) and seed-independently (0.24 percent energy, 0.002
+   fold ratio between imperfection seeds).</li>
+<li>The mechanism: two plastic zones with a near-rigid middle, the loaded end
+   being what changes, and the END ATTACHMENT being what governs it.</li>
+<li>A design rule that held across nine candidates: weaken precisely the part
+   that was going to fail, and nothing else.</li>
+<li>A finding that contradicts the project's own founding assumption:
+   deformation mode and energy absorption are largely independent levers.</li>
+<li><strong>A working design.</strong> PW, at plus 5 percent mass and no worse peak force,
+   removes the energy cliff (94 percent retention at 10 degrees against the
+   baseline's 70), survives severe speed, and at the RCAR angle absorbs the
+   impact in about a quarter less stroke than the baseline (Section 13).</li>
+<li>An honest industry comparison: PW reaches the low end of the published
+   range, matching the foam-filled conical figure, against a harder baseline
+   and under a constraint most of that work does not apply.</li>
+</ol>
+<p><strong>What it does not deliver.</strong> Parity with the multi-cell and hierarchical
+headline claims. A fix valid beyond about 20 degrees. Any claim about the exact
+Golf R part. And a validated absolute peak force at a given load angle, per the
+<code>DECISIONS.md</code> D3 licence.</p>
+<p><strong>The single most important caveat</strong>, which Section 11.3 established and which
+qualifies everything upstream of it: the 6.25 degree critical angle depends on
+a flange representation that was always labelled an assumption and turns out to
+dominate the result. The number is a lower bound, not a measurement.</p>
+<h2>13. The RCAR test, what it actually shows, and a claim I withdrew</h2>
+<p><code>BRIEF.md</code> framed the payoff as energy kept out of the frame rail. The traced
+industry test makes that concrete. RCAR V2.5, read in full and archived,
+specifies <strong>15 km/h at a 10 degree barrier angle</strong> with 40 percent overlap, and
+it is a damageability and repairability rating: what makes repair cheap is that
+the bolt-on crash box absorbs the impact so the rails never deform.</p>
+<p>So the real requirement is not an SEA number. It is: absorb the impact inside
+your own stroke, at the test angle.</p>
+<h3>13.1 The claim this section used to make, and why it is wrong</h3>
+<p>An earlier version of this section reported that at 10 degrees the baseline
+FAILS this test and PW PASSES. <strong>That claim is withdrawn.</strong> It was an artefact
+of a post-processing window, and the error is worth reporting in full because it
+is the kind that survives review.</p>
+<p>Section 3.5 fixes EA as the integral of force over a <strong>60 mm crush window</strong>,
+inherited from the Phase A anchor, which was a 100 mm specimen crushed 60 mm.
+As a comparative metric that is correct and it is applied identically to both
+sides of every comparison in this report. But the Phase B and later runs drive a
+100 mm stroke into a 180 mm box, and the pass/fail question above is a stroke
+question, not a window question. Every FAIL in the old table meant "did not
+reach 4.99 kJ within 60 mm", while the sentence underneath it claimed "within
+its 100 mm stroke". At the moment EA stopped accumulating, the baseline at 10
+degrees was still reacting 58.8 kN and PW still 110.2 kN. Nothing had densified.
+The box was still absorbing; the metric had simply stopped counting. And 60 mm
+has no standing as a usable stroke here: it is 33 percent of this 180 mm box,
+where the anchor's 60 mm was 60 percent of its own length.</p>
+<h3>13.2 The test, evaluated against the criterion actually stated</h3>
+<p>Stroke required to absorb the 4.99 kJ struck-side share, integrated over the
+full 100 mm modelled stroke:</p>
+<table>
+<thead>
+<tr>
+<th>angle</th>
+<th>baseline</th>
+<th>G (free)</th>
+<th>PW (paid)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>53.85 mm</td>
+<td>54.00 mm</td>
+<td>53.98 mm</td>
+</tr>
+<tr>
+<td>6.25</td>
+<td>57.40 mm</td>
+<td>57.16 mm</td>
+<td>55.80 mm</td>
+</tr>
+<tr>
+<td>7.50</td>
+<td>58.47 mm</td>
+<td>58.26 mm</td>
+<td>55.74 mm</td>
+</tr>
+<tr>
+<td>8.75</td>
+<td>62.80 mm</td>
+<td>63.32 mm</td>
+<td>56.24 mm</td>
+</tr>
+<tr>
+<td><strong>10, the RCAR angle</strong></td>
+<td><strong>75.97 mm</strong></td>
+<td><strong>77.45 mm</strong></td>
+<td><strong>56.81 mm</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>All three pass.</strong> The baseline consumes three quarters of its stroke to do it,
+and PW consumes just over half.</p>
+<h3>13.3 What PW is actually worth at the RCAR angle</h3>
+<p>The pass/fail framing is gone. What replaces it is better, because it depends on
+neither of the two assumptions that framing rested on.</p>
+<table>
+<thead>
+<tr>
+<th>assumed struck-side share</th>
+<th>baseline</th>
+<th>PW</th>
+<th>intrusion PW saves</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3.50 kJ</td>
+<td>51.98 mm</td>
+<td>42.65 mm</td>
+<td>9.34 mm</td>
+</tr>
+<tr>
+<td>4.00 kJ</td>
+<td>60.33 mm</td>
+<td>47.48 mm</td>
+<td>12.85 mm</td>
+</tr>
+<tr>
+<td>4.50 kJ</td>
+<td>68.47 mm</td>
+<td>52.27 mm</td>
+<td>16.21 mm</td>
+</tr>
+<tr>
+<td><strong>4.99 kJ, nominal</strong></td>
+<td><strong>75.97 mm</strong></td>
+<td><strong>56.81 mm</strong></td>
+<td><strong>19.16 mm, 25.2 percent less</strong></td>
+</tr>
+<tr>
+<td>5.50 kJ</td>
+<td>83.67 mm</td>
+<td>61.44 mm</td>
+<td>22.23 mm</td>
+</tr>
+<tr>
+<td>6.00 kJ</td>
+<td>93.20 mm</td>
+<td>66.07 mm</td>
+<td>27.13 mm</td>
+</tr>
+</tbody>
+</table>
+<p><strong>At the angle the industry tests at, PW absorbs the impact in about a quarter
+less stroke than the production-representative baseline, and the saving grows
+with whatever energy share you assume.</strong> There is no plausible share at which
+the baseline intrudes less. That is the defensible form of the result: it needs
+no energy-split assumption and no stroke-limit assumption, and 19 mm less
+intrusion into the rail is the quantity that decides whether a repair is a
+bolt-on swap or a rail replacement.</p>
+<h3>13.4 The energy-share sensitivity, priced</h3>
+<p>The 4.99 kJ share was always this project's own assumption rather than a traced
+value, so the obvious challenge is what happens if it is wrong. The verdict band
+is the range of assumed share over which the old pass/fail claim would have
+held: below it both boxes pass, above it both fail.</p>
+<table>
+<thead>
+<tr>
+<th>criterion</th>
+<th>baseline also passes at or below</th>
+<th>PW also fails above</th>
+<th>where 4.99 kJ sits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>full 100 mm stroke, as stated</td>
+<td>6.307 kJ (46.2 percent of vehicle KE)</td>
+<td>9.113 kJ (66.6 percent)</td>
+<td><strong>below the band, both pass</strong></td>
+</tr>
+<tr>
+<td>60 mm window, as it was computed</td>
+<td>3.980 kJ (29.1 percent)</td>
+<td>5.341 kJ (39.1 percent)</td>
+<td>inside, but only +7.0 percent headroom</td>
+</tr>
+</tbody>
+</table>
+<p>The instructive part is that <strong>the assumed share was never the fragile
+assumption.</strong> Even on the 60 mm criterion the verdict held over a band only 1.36
+kJ wide, with the nominal value three quarters of the way to the upper edge, so
+a 7 percent heavier share would have flipped it too. But swapping the stroke
+limit from 60 to 100 mm moves the band further than the entire credible range of
+the share. The criterion dominated, and it was the thing nobody sensitivity
+tested, because it did not look like an assumption at all.</p>
+<h3>13.5 What did not change</h3>
+<p>The correction is confined to this section. Every EA, SEA, retention, peak force
+and CFE figure elsewhere is computed over the 60 mm window on both sides of
+every comparison and is unaffected. Recomputed over the full stroke the central
+finding is if anything stronger: the baseline's retention at 10 degrees is 64.2
+percent rather than 69.7, PW's is 91.9 rather than 93.8, and PW's advantage at
+10 degrees rises from +34.2 to +44.5 percent. The energy cliff, PW removing it,
+and both converging by 30 degrees all hold on either measure. <strong>The design
+outcome does not move. Only the RCAR framing does.</strong> Full working in
+<code>RESULTS_LOG.md</code> C13.</p>
+<p>One caveat survives from the original section: a claim found in secondary
+sources that crash boxes must protect from 0 to 30 degrees could NOT be traced
+to primary regulation text (three retrieval attempts on UNECE R42 failed or
+returned the wrong regulation), so it is not used as a target anywhere.</p>
+<hr />
+<h2>14. The three open items, closed</h2>
+<p>Section 12 listed three untested routes. All three were then run, seventeen
+solves, and none displaces PW. What they add is a far stronger answer to the
+question the study kept circling: why not simply do what the published work
+does.</p>
+<p><strong>Real multi-cell was tested properly and it vindicates the literature on
+energy while exposing the cost that literature does not report.</strong> Two internal
+webs giving three chambers produce <strong>+52 percent axial energy and +83 percent
+at 10 degrees</strong>, the largest gain in the whole project, measured against this
+project's own production-representative baseline rather than a plain tube. They
+also produce <strong>+87 percent axial peak force</strong>, the largest violation in the
+whole project. Squeezed into the plus 5 percent mass budget it still lands at
++31 percent. This is the third instance of a pattern already seen with
+candidate B and candidate TB, and the clearest: <strong>the published gains in this
+family are real and would be rejected by a peak force constraint those studies
+do not apply.</strong></p>
+<p><strong>Gussets are three times more efficient than flange thickening and still do
+not clear the cap.</strong> Stiffening only the two walls that resist bending, next to
+the flange, converts peak force penalty into angle performance at a ratio of
+5.8 against flange thickening's 1.8. The best variant misses the cap by 1.55 kN
+out of 119.4. Its one allowed re-tune, shortening the collar from 10 mm to
+4 mm, cut collar material by 60 percent and reduced peak force by only 0.5 kN
+while halving the angle benefit. <strong>The penalty is caused by the presence of a
+stiff junction, not by its size</strong>, which is why shrinking it sheds the benefit
+and keeps the cost.</p>
+<p><strong>So the attachment lever is closed on four independent routes:</strong> removing the
+flange (+72 percent PCF), thickening it (monotonic trade, no window), stiff
+flange plus a base trigger (recovers 8 percent against 29 added), and gussets
+at two sizes (+2 percent over cap at best). The Section 11.3 finding stands and
+now carries a firm negative beside it: within this design family the attachment
+cannot be stiffened without paying more in head-on force than the constraint
+allows, because anything that resists the hinge at the joint also resists the
+fold that starts there.</p>
+<p><strong>Bead optimisation was deliberately not run.</strong> It is worth a few percent and
+only makes sense once the design it tunes is settled; running it before these
+questions were answered would have optimised a design that might not be the
+winner. It remains open as a choice, not an omission.</p>
+<p><strong>Final standing: PW is unchanged as the design outcome.</strong> Plus 5 percent mass,
+peak force inside the cap, energy cliff removed, gains at severe speed, and it
+cuts intrusion at the RCAR angle by about a quarter against the baseline.</p>
+<hr />
+<h2>15. Phase E: the designed experiment, and a response surface that failed</h2>
+<p>The one item Section 14 left deliberately open was optimisation. Every bead
+depth, position and count in this project was hand-picked, and a parameter study
+was the obvious next step. It is now done: <strong>50 solves, 24 new design points at
+two angles plus one verification pair</strong>, with the design space, budget,
+constraints and stop conditions all declared in <code>DECISIONS.md</code> D4 before any
+solve ran. Full working in <code>RESULTS_LOG.md</code> C14.</p>
+<p>Four factors, mass pinned at exactly plus 5.00 percent on every point by
+construction: web thickness (with web length compensating), bead depth, leading
+band position, band spacing. Latin hypercube, fixed seed. Objective: energy at
+10 degrees, the RCAR angle. Constraint: axial peak force ratio within the
+declared 1 percent, which three of 24 points break.</p>
+<p>Isight is installed on the build machine but unlicensed, so this is a
+<strong>scripted</strong> DOE built on the project's own deck generator, and it is described
+that way everywhere. The parameterisation could not have been done in Isight's
+templating component regardless, since it meshes an internal web and moves nodes
+to emboss beads.</p>
+<h3>15.1 PW's hand-picked parameters were already near optimal</h3>
+<p><strong>PW ranks second out of twenty-five.</strong> The point that beats it, DOE01, does so
+by <strong>0.83 percent</strong>, and is PW with a shallower bead (1.025 mm against 1.35) and
+a web within 2 percent of PW's. The threshold declared in D4.5 before the study
+ran was 3 percent, so the recorded finding is that hand-picking had already
+found the plateau, and it is not iterated past.</p>
+<p>That is a smaller headline than an optimisation study hopes for and a more
+useful one than it usually gets: it converts "these parameters were chosen by
+judgement" into "these parameters were chosen by judgement and a 25-point study
+could not meaningfully improve them".</p>
+<h3>15.2 The response surface does not work, and the reason is the physics</h3>
+<table>
+<thead>
+<tr>
+<th>diagnostic</th>
+<th>value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>R2 on its own fitted data</td>
+<td>0.715</td>
+</tr>
+<tr>
+<td><strong>Q2, leave-one-out cross-validation</strong></td>
+<td><strong>-8.35</strong></td>
+</tr>
+<tr>
+<td>held-out prediction of PW</td>
+<td>-9.70 percent error</td>
+</tr>
+<tr>
+<td>surface optimum</td>
+<td>at the corner of all four ranges, predicting 8.5577 kJ</td>
+</tr>
+</tbody>
+</table>
+<p>A Q2 below zero means the model predicts designs it has not seen <strong>worse than
+simply guessing the average</strong>. Reducing the model does not save it: linear only
+gives Q2 = 0.112, linear plus quadratic main effects gives -0.164.</p>
+<p><strong>The cause is a regime boundary inside the design space.</strong> The fold-versus-bend
+discriminator returns fold ratios from 0.520 to 0.830 across the 24 points: some
+designs fold, some bend, most are mixed. The objective is therefore not a smooth
+function of the four factors, and no polynomial in them can be. The respectable
+looking R2 was 15 terms memorising 24 points across a discontinuity.</p>
+<h3>15.3 The verification pair was spent refuting, not confirming</h3>
+<p>D4.4 allowed exactly one verification pair. Confirming an optimum I did not
+believe would have wasted it, so it was spent testing the surface, with the
+prediction written into the results log <strong>before</strong> the solve: the surface said
+8.5577 kJ, I predicted 4.7 to 5.3 kJ from the three solved points nearest that
+corner.</p>
+<p><strong>Result: 5.0698 kJ.</strong> The surface over-predicted by <strong>68.8 percent</strong>, and the
+design it identified as 60 percent better than PW is in fact <strong>5.1 percent
+worse</strong> than PW. The prediction held.</p>
+<h3>15.4 The study found this project's own central result independently</h3>
+<p><strong>DOE12 and DOE19 are classified BEND at fold ratio 0.520 and absorb 5.14 and
+5.07 kJ</strong>, more than several points that fold visibly better, while the five
+worst absorbers sit mid-range at 0.532 to 0.569. A study built to tune bead
+geometry recovered Section 6.4's finding that deformation mode and energy
+absorption are largely separate levers, sharing no method with it beyond the
+solver. That is the strongest internal corroboration in the project.</p>
+<h3>15.5 And it closes the peak force question</h3>
+<p>Across all 24 points axial peak force spans 118.164 to 120.394 kN, a range of
+1.9 percent, and the Pareto front is nearly flat: <strong>giving up 8.4 percent of
+energy buys back 0.22 percent of peak force.</strong> There is no useful trade. Peak
+force is effectively constant across the feasible design space and energy is the
+only axis that moves, which answers whether PW should have been tuned toward a
+quieter spike. It should not.</p>
+    <p class="report-source">Report text as written for the project; figures are on the project summary page.</p>
+  </article>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <dl class="tblock">
+      <div><dt>Drawn by</dt><dd>Usman Bashir</dd></div>
+      <div><dt>Contact</dt><dd><a href="mailto:usman.bashir1933@gmail.com">usman.bashir1933@gmail.com</a></dd></div>
+      <div><dt>Checked</dt><dd>Every number traces to the project report</dd></div>
+    </dl>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,1021 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Upper Control Arm: Load Cases, Topology Optimisation, Verification and Fatigue | Technical report | Usman Bashir</title>
+<meta name="description" content="Full technical report: Upper Control Arm: Load Cases, Topology Optimisation, Verification and Fatigue.">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body class="report-page">
+
+<header class="site">
+  <div class="bar">
+    <div class="wrap nav-row">
+      <a class="brand" href="../index.html">Usman Bashir</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">Menu</button>
+      <nav class="primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#publication">Publication</a>
+        <a href="../index.html#tools">Tools</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </div>
+  <div class="legend" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+</header>
+
+<main>
+  <div class="wrap report-bar">
+    <a class="crumb" href="../projects/control-arm-topopt.html">Back to the project summary</a>
+    <button class="btn quiet print-btn" type="button" onclick="window.print()">Print or save as PDF</button>
+  </div>
+  <article class="report">
+<h1>Upper Control Arm: Load Cases, Topology Optimisation, Verification and Fatigue</h1>
+<p><strong>Author:</strong> Usman Bashir, BSc Metallurgical and Materials Engineering
+<strong>Solver:</strong> Abaqus/Standard 2024 with Tosca Structure</p>
+<p><em>Internal working records cited in this report (for example DECISIONS, RESULTS_LOG and the sources ledger) are available on request.</em></p>
+<h2>Section 5: Load Case Derivation and Analytical Validation (v3)</h2>
+<p><strong>Architecture note:</strong> the part modelled is a double-wishbone front upper
+control arm, spring mounted on the lower arm, per the stated design
+intent. Vehicle-class parameters (mass, wheelbase, track, tyre size) are
+taken from the Golf R as a representative reference vehicle; the real Mk7
+Golf R front axle is MacPherson strut, not double wishbone, so this is a
+double-wishbone front corner sized to Golf-R-class parameters, not a literal
+model of the production part.</p>
+<hr />
+<h2>5.1 Methodology for Load Case Selection</h2>
+<p>The analysis adopts the standardized acceleration load cases of Nassar et al.
+(2025), in which suspension loads are expressed as multiples of gravitational
+acceleration (g) acting at the tire contact patch. All three published cases,
+Bumping, Cornering, and Brake-in-Turn, are evaluated, rather than the single
+Brake-in-Turn case of the original study revision. This is required for the
+downstream topology optimization: a shape optimized against one load
+direction is unprotected in every direction that case does not exercise.</p>
+<p><strong>Table 4: Standard Acceleration Multipliers (Nassar et al., 2025, Table 4)</strong></p>
+<p>Full reference (located 2026-08-10 in the April report's own reference list
+and verified against the publisher): Nassar, M., Polat, K., Koçlu, Y., &amp;
+Topaç, M.M. (2025). Design and Optimisation of a Double Wishbone Independent
+Suspension System for an L6 Electric Vehicle: A Response Surface Methodology
+Based Design Application. Engineering Perspective, 5(1), 21-30.
+DOI 10.29228/eng.pers.79569. Note the source paper is itself a double
+wishbone suspension study, consistent with this project's architecture.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">Load Case</th>
+<th style="text-align: center;">Vertical (P)</th>
+<th style="text-align: center;">Lateral (S)</th>
+<th style="text-align: center;">Braking (B)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">Bumping</td>
+<td style="text-align: center;">2.0 g</td>
+<td style="text-align: center;">0.0 g</td>
+<td style="text-align: center;">0.0 g</td>
+</tr>
+<tr>
+<td style="text-align: center;">Cornering</td>
+<td style="text-align: center;">1.0 g</td>
+<td style="text-align: center;">1.25 g</td>
+<td style="text-align: center;">0.0 g</td>
+</tr>
+<tr>
+<td style="text-align: center;">Brake-in-Turn</td>
+<td style="text-align: center;">1.0 g</td>
+<td style="text-align: center;">0.75 g</td>
+<td style="text-align: center;">0.75 g</td>
+</tr>
+</tbody>
+</table>
+<h2>5.2 Load Path Rationale: Why the UCA Sees What It Sees</h2>
+<p>The UCA pivots freely about its bushing axis. A hinge cannot react a force
+that merely rotates it; vertical wheel travel therefore swings the arm rather
+than loading it, and the vertical load path runs tire to knuckle to lower
+ball joint to lower control arm to coil spring to body. The UCA can only be
+loaded in the directions its kinematics refuse: longitudinal forces from road
+friction and lateral forces from cornering, both reacted as a force couple
+across the knuckle between the upper and lower ball joints.</p>
+<p>Consequently the UCA carries only an assumed 500 N vertical residual
+(bushing friction, ball joint articulation drag, and arm angularity effects),
+while the braking and cornering components dominate the design loads.</p>
+<h2>5.3 Common Inputs</h2>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Value</th>
+<th>Description</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>m</td>
+<td>2,060 kg</td>
+<td>Vehicle mass (GVWR)</td>
+<td>Golf R specification, inherited from April report</td>
+</tr>
+<tr>
+<td>g</td>
+<td>9.81 m/s²</td>
+<td>Gravitational acceleration</td>
+<td>Standard</td>
+</tr>
+<tr>
+<td>(n/a)</td>
+<td>60/40</td>
+<td>Front/rear static weight split</td>
+<td>Assumed, typical front-engine, not measured</td>
+</tr>
+<tr>
+<td>h_cg</td>
+<td>0.53 m</td>
+<td>Centre of gravity height</td>
+<td>Assumed, typical hot hatch, not measured</td>
+</tr>
+<tr>
+<td>L</td>
+<td>2.63 m</td>
+<td>Wheelbase</td>
+<td>Golf R specification</td>
+</tr>
+<tr>
+<td>t</td>
+<td>1.54 m</td>
+<td>Front track width</td>
+<td>Golf R specification</td>
+</tr>
+<tr>
+<td>R_t</td>
+<td>0.324 m</td>
+<td>Tire rolling radius</td>
+<td>Golf R specification (typical 235/35R19)</td>
+</tr>
+<tr>
+<td>h_LBJ</td>
+<td>0.150 m</td>
+<td>Lower ball joint height above ground</td>
+<td>This derivation's free body, Section 5.4a below</td>
+</tr>
+<tr>
+<td>h_k</td>
+<td>0.250 m</td>
+<td>Upper-to-lower ball joint spacing</td>
+<td>This derivation's free body, Section 5.4a below</td>
+</tr>
+<tr>
+<td>k_d</td>
+<td>1.6</td>
+<td>SAE-style abuse factor, inherited, no standard clause identified</td>
+<td>Design choice from the April study</td>
+</tr>
+<tr>
+<td>F_res</td>
+<td>500 N</td>
+<td>Assumed UCA vertical residual</td>
+<td>Assumption, Section 5.2</td>
+</tr>
+</tbody>
+</table>
+<p>Base quantities:</p>
+<pre><code>W        = m . g       = 2,060 x 9.81   = 20,208.6 N   (total vehicle weight)
+W_front  = 0.60 . W     =                  12,125.2 N   (front axle share)
+W_corner = W_front / 2 =                    6,062.6 N   (one front wheel, static)
+</code></pre>
+<h2>5.4a Free Body: The Longitudinal Force Correction</h2>
+<p>The original (v2) derivation used the tire rolling radius R_t = 0.324 m as
+the moment arm for the longitudinal (braking) force reacted by the UCA. This
+is wrong for an outboard, knuckle-mounted brake.</p>
+<p>The caliper is bolted to the knuckle, not to the control arm. Brake torque is
+generated and reacted entirely within the free body outboard of the ball
+joints (caliper against disc against knuckle); it never crosses the ball
+joints and is never an external moment on the UCA. The only external
+longitudinal force acting on that free body is road friction at the tire
+contact patch. That force acts at ground level, a height h_LBJ = 0.150 m
+below the lower ball joint, not R_t = 0.324 m below it.</p>
+<p>This is exactly the arm the document already used, correctly, for the
+lateral force in the same case. The fix makes the longitudinal and lateral
+treatments consistent:</p>
+<pre><code>F_UCA,x = F_road,x x h_LBJ / h_k     (corrected; was F_road,x x R_t / h_k)
+</code></pre>
+<h2>5.4 Case 1: Brake-in-Turn (P = 1.0 g, S = 0.75 g, B = 0.75 g)</h2>
+<p>Under hard braking while cornering, the body's inertia at the centre of
+gravity height h_cg produces two simultaneous weight transfers onto the
+outboard front wheel: a longitudinal transfer (nose-dive, over the wheelbase
+L) from the braking component, and a lateral transfer (roll, over the track
+t) from the lateral component. Nassar Table 4 specifies both at 0.75 g for
+this case, so both transfers must be evaluated at 0.75 g, not at the 1.2 g
+tire-adhesion envelope used for the longitudinal term in the superseded
+version, and the lateral transfer (previously omitted entirely) is now
+included using the same structural pattern Case 2 already uses for its own
+lateral transfer.</p>
+<pre><code>dW_long = m . (0.75 g) . h_cg / L / 2
+        = 2,060 x 7.3575 x 0.53 / 2.63 / 2 = 1,527.2 N
+
+dW_lat  = W_front . 0.75 . h_cg / t
+        = 12,125.2 x 0.75 x 0.53 / 1.54    = 3,129.7 N
+
+N_wheel = W_corner + dW_long + dW_lat
+        = 6,062.6 + 1,527.2 + 3,129.7      = 10,719.5 N
+</code></pre>
+<p>Tire force generation is friction-limited: the tire can push against the
+road by at most its instantaneous vertical load times the utilized friction
+fraction. Both axes share the same 0.75 g multiplier in this case, so one
+F_road value applies to both:</p>
+<pre><code>F_road = 0.75 x N_wheel = 0.75 x 10,719.5 = 8,039.6 N   (per axis)
+</code></pre>
+<p>Plausibility check (friction circle, not part of the transfer calculation
+itself): the resultant demand is sqrt(0.75^2 + 0.75^2) = 1.06 g, which lies
+inside an assumed 1.2 g tire-road adhesion limit for a typical passenger
+tire. Braking and cornering share, and cannot simultaneously saturate, the
+available grip.</p>
+<p>The road force acts at ground level; the UCA reacts it as one member of a
+force couple across the knuckle (moment balance about the lower ball joint).
+Per the free body in Section 5.4a, both the braking force and the lateral
+force now act through the same arm, h_LBJ:</p>
+<pre><code>F_UCA,x = F_road x h_LBJ / h_k = 8,039.6 x 0.150 / 0.250 = 4,823.8 N
+F_UCA,z = F_road x h_LBJ / h_k = 8,039.6 x 0.150 / 0.250 = 4,823.8 N
+</code></pre>
+<p>(F_UCA,x and F_UCA,z are equal because B and S are both 0.75 g in Table 4
+for this case, and both now use the same arm and the same F_road.)</p>
+<p>Applying the k_d = 1.6 abuse factor:</p>
+<pre><code>F_x = 4,823.8 x 1.6 = 7,718.0 N (rearward)
+F_z = 4,823.8 x 1.6 = 7,718.0 N (lateral)
+F_y = 1.0 x F_res    =   500.0 N (residual, P = 1.0 g)
+</code></pre>
+<h3>SUPERSEDED: original (v2, 2026-08-01) Case 1 chain</h3>
+<p><strong>Preserved for the record. Not used in Table 5. Dated 2026-08-01. Reason
+superseded: arm error factor 2.16 (R_t / h_LBJ = 0.324 / 0.150 = 2.16),
+missing lateral transfer in Case 1.</strong></p>
+<pre><code>dW_long (old, 1.2 g)     = m x (1.2 g) x h_cg / L / 2 = 2,443.5 N
+N_wheel (old)             = W_corner + dW_long          = 8,506.1 N
+F_road (old)              = 0.75 x N_wheel               = 6,379.5 N
+F_UCA,x (old, R_t arm)    = F_road x R_t / h_k            = 8,267.9 N
+F_UCA,z (old)             = F_road x h_LBJ / h_k          = 3,827.7 N
+F_x (old, x k_d)          = 13,228.6 N (rearward)
+F_z (old, x k_d)          =  6,124.4 N (lateral)
+</code></pre>
+<p>Old Table 5 row 1 (superseded): CF1 = -13,229 N, CF2 = 500 N, CF3 = 6,124 N.</p>
+<h2>5.5 Case 2: Cornering (P = 1.0 g, S = 1.25 g, B = 0)</h2>
+<p>Unchanged by this revision; reproduced here for the full-chain record.</p>
+<p>In steady cornering the tires pull the car toward the turn centre at road
+level while the body's inertia acts outward at h_cg. This force pair rolls
+the body onto the outboard wheels: the outer wheel gains the load the inner
+wheel loses, separated by the track width t. Balancing the roll moment
+against the load-transfer moment for the front axle:</p>
+<pre><code>dW_lat  = W_front x 1.25 x h_cg / t
+        = 12,125.2 x 1.25 x 0.53 / 1.54 = 5,216.2 N
+
+N_outer = 6,062.6 + 5,216.2 = 11,278.8 N
+</code></pre>
+<p>Plausibility check: the inner wheel drops to 6,062.6 - 5,216.2 = 846.4 N,
+near lift-off, which is the expected condition at a 1.25 g lateral limit and
+confirms the transfer magnitude is physical.</p>
+<pre><code>F_road,z = 1.25 x N_outer = 1.25 x 11,278.8 = 14,098.5 N
+
+F_UCA,z = 14,098.5 x 0.150 / 0.250 = 8,459.1 N
+F_z     = 8,459.1 x 1.6            = 13,534.5 N (lateral)
+</code></pre>
+<p>No braking component exists in this case: F_x = 0. F_y = 1.0 x F_res = 500 N
+(residual, P = 1.0 g).</p>
+<h2>5.6 Case 3: Bumping (P = 2.0 g, S = 0, B = 0)</h2>
+<p>The applied load is unchanged by this revision (F_y = 1,000 N). What changes
+is the framing: the scrub-radius finding in Section 5.8 below shows this
+case is no longer near-null once a real, if excluded, load path is
+considered.</p>
+<p>A 2.0 g vertical bump doubles the static wheel load (no longitudinal
+transfer applies; the vehicle is not decelerating). Per Section 5.2, this
+vertical load bypasses the UCA almost entirely via the LCA and spring; the
+arm pivots with the suspension travel rather than resisting it. The UCA
+input scales only the residual:</p>
+<pre><code>F_y = 2.0 x F_res = 2.0 x 500 = 1,000 N
+</code></pre>
+<p>This case is retained in the analysis set because it demonstrates, rather
+than asserts, that the UCA's direct vertical load path is small. It does
+not, on its own, demonstrate that the corner is negligible under bump: see
+the scrub-radius finding below, which shows a real lateral load path exists
+at this event that is not captured by the 500 N residual model.</p>
+<h2>5.7 Final Multiaxial Design Loads (Abaqus Inputs)</h2>
+<p>Global axes as modeled: X = longitudinal (negative = rearward braking pull),
+Y = vertical, Z = lateral. All loads applied at the outboard ball joint
+reference point (RP-1) via the continuum distributing coupling, matching the
+cf1/cf2/cf3 convention used in <code>setup_loadcases.py</code>.</p>
+<p><strong>Table 5 (v3): Design load set</strong></p>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th style="text-align: right;">CF1 = F_x [N]</th>
+<th style="text-align: right;">CF2 = F_y [N]</th>
+<th style="text-align: right;">CF3 = F_z [N]</th>
+<th>Dominant demand</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Brake-in-Turn</td>
+<td style="text-align: right;">-7,718</td>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">7,718</td>
+<td>Longitudinal AND lateral bending, equal magnitude</td>
+</tr>
+<tr>
+<td>2. Cornering</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">500</td>
+<td style="text-align: right;">13,535</td>
+<td>Lateral bending, single largest load in the set</td>
+</tr>
+<tr>
+<td>3. Bumping</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1,000</td>
+<td style="text-align: right;">0</td>
+<td>Small direct vertical input; see scrub-radius finding, Section 5.8</td>
+</tr>
+</tbody>
+</table>
+<h3>Governing case: the old headline claim does not survive</h3>
+<p>Comparing the corrected Case 1 peak component against Case 2's Fz:</p>
+<pre><code>Case 1 peak (Fx = Fz) = 7,718 N
+Case 2 peak (Fz)      = 13,535 N     (unchanged by this fix)
+
+13,535 N &gt; 7,718 N: Case 2 exceeds Case 1's largest component by 75%.
+</code></pre>
+<p>In the superseded (v2) chain, Case 1's peak (13,229 N) and Case 2's peak
+(13,535 N) were within 2.3% of each other, near-parity. The v2 document's
+headline, "Case 1 remains the governing longitudinal case," read in context
+as a claim of overall near-co-dominance between the two cases. That framing
+does not survive the fix: Case 1's peak has dropped to 7,718 N, 43% below
+Case 2's unchanged 13,535 N. <strong>Case 2 (Cornering) is now the single
+governing case for overall peak load magnitude in this set.</strong></p>
+<p>Case 1 still uniquely governs the longitudinal (Fx) direction, since Case 2
+carries zero Fx; the two cases remain necessary together in the topology
+optimization load set because they exercise different, non-redundant bending
+planes of the arm. But the two-cases-are-roughly-tied framing of the
+original headline is retracted.</p>
+<h2>5.8 Stated Assumptions and Limitations</h2>
+<ol>
+<li>Front/rear split (60/40), h_cg (0.53 m), and track (1.54 m) are assumed
+   from typical published data for this vehicle class, not measured.</li>
+<li>Roll stiffness distribution is neglected; lateral weight transfer is
+   apportioned to the front axle by static axle load share. Real anti-roll
+   bar tuning may load the front outer wheel further.</li>
+<li>The 500 N vertical residual on the UCA is an engineering assumption
+   (Section 5.2). A sensitivity solve (0 N vs 1,000 N) is planned to
+   demonstrate result insensitivity.</li>
+<li>Single-corner idealization: the outboard corner is assumed to carry the
+   full grip demand. Conservative for the arm under design.</li>
+<li>Loads are static "snapshot" peaks at the worst dynamic instant; no
+   inertia relief or transient effects are modeled. The k_d = 1.6 factor
+   covers dynamic exceedances (ABS pulsation, mid-event road irregularity).</li>
+<li>Bushing compliance is idealized as rigid (encastre at RP-2/RP-3);
+   bore-level load distribution is smoothed by distributing couplings.</li>
+<li><strong>Traction (halfshaft torque), excluded from the load set.</strong> Halfshaft
+   torque reaction is carried by the differential case, bolted to the
+   subframe, not by the UCA: the same internal-reaction argument as the
+   corrected braking free body in Section 5.4a. As a bounding check only
+   (this force never actually reaches the arm), at 0.6 g with an even
+   (50/50) AWD front/rear torque split, the front-wheel tractive force is
+   3,031 N; referred through the CV-joint-to-lower-ball-joint height offset
+   (R_t - h_LBJ = 0.174 m) against h_LBJ, this bounds to approximately
+   3,516 N, well below both Case 1's peak (7,718 N) and Case 2's peak
+   (13,535 N). It does not govern and is not added to the formal load set.</li>
+<li><strong>Scrub radius, excluded from the load set but no longer treated as
+   negligible.</strong> An assumed 50 mm scrub radius (typical hot hatch, not
+   measured) under the 2.0 g bump case (Case 3) offsets the tire's
+   vertical reaction line from the kingpin axis. Using the full 2g corner
+   vertical load (12,125 N) and the same ball-joint-couple free body used
+   throughout this section: F_scrub = 12,125 N x 0.050 m / 0.250 m =
+   2,425 N of lateral load into the arm. This is more than double Case 3's
+   documented 1,000 N residual. <strong>Case 3 (Bumping) must no longer be
+   described as a "near-null verification case"</strong>: the scrub-radius path
+   alone puts a non-trivial lateral load into the arm under this event. The
+   scrub term itself remains excluded from the formal load set (it is a
+   limitation, not an applied load, pending a proper scrub-radius geometry
+   value from the actual knuckle/steering design), but its magnitude is
+   shown here explicitly so the "near-null" framing is retracted with a
+   number attached, not just asserted away.</li>
+</ol>
+<h2>5.9 Cross-Check</h2>
+<p>All arithmetic above was computed and verified in
+<code>loadcase_derivation_v2.py</code> (plain
+Python, no Abaqus dependency) and the final load vectors were written to
+<code>loads_v2_summary.json</code>, matching the
+cf1/cf2/cf3 sign convention read from <code>setup_loadcases.py</code>. Key output:</p>
+<pre><code>F_UCA,x = F_road * h_LBJ / h_k = 8039.59 * 0.15 / 0.25 = 4823.76 N
+F_UCA,z = F_road * h_LBJ / h_k = 8039.59 * 0.15 / 0.25 = 4823.76 N
+CHECK: F_UCA,x == F_UCA,z -&gt; PASS (4823.7567 vs 4823.7567)
+
+Case 1 peak component = 7718.01 N
+Case 2 peak component = 13534.51 N
+CHECK: does Case 2's single component exceed Case 1's peak?
+13534.51 N &gt; 7718.01 N -&gt; YES (Case 2 now clearly leads, +75.4%)
+
+CHECK: F_scrub (2425 N) &gt; Case 3's documented residual F_y (1000 N)
+CHECK: F_trac,bound (3516 N) &lt; Case 1 peak (7718 N) -&gt; PASS (does not govern)
+CHECK: F_trac,bound (3516 N) &lt; Case 2 Fz (13535 N) -&gt; PASS (does not govern)
+</code></pre>
+<h2>Section 6B: Topology Optimization, Verification and Fatigue (v2 study)</h2>
+<hr />
+<h2>6B.1 Objective and Setup</h2>
+<p>The v2 study converts Section 7's qualitative recommendation ("remove the
+low-stress core material") into an executed topology optimization using
+SIMULIA Tosca Structure 2024, driven by all three load cases of Section 5
+simultaneously.</p>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Value</th>
+<th>Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Design space</td>
+<td>37,501 elements (arm web)</td>
+<td>Bore regions excluded</td>
+</tr>
+<tr>
+<td>Frozen regions</td>
+<td>4,857 elements: 10 mm collars around all three coupling interfaces</td>
+<td>Mounting interfaces are non-negotiable; also prevents load/BC attachment degeneracy</td>
+</tr>
+<tr>
+<td>Objective</td>
+<td>Minimise strain energy, summed over all 3 steps</td>
+<td>Maximise stiffness against braking AND cornering simultaneously</td>
+</tr>
+<tr>
+<td>Constraint</td>
+<td>Design-space volume fraction ≤ target (0.40 / 0.25 / 0.15 swept)</td>
+<td>Mass reduction driver</td>
+</tr>
+<tr>
+<td>Material interpolation</td>
+<td>SIMP, penalty 3.0</td>
+<td>Standard; drives density to solid/void</td>
+</tr>
+<tr>
+<td>Manufacturing restriction</td>
+<td>Minimum member size 6 mm</td>
+<td>Route-agnostic (casting, forging, machining all remain open)</td>
+</tr>
+<tr>
+<td>Mesh</td>
+<td>Uniform 10 mm C3D10 (42,358 elements)</td>
+<td>Near-uniform element size required for comparable sensitivities</td>
+</tr>
+<tr>
+<td>Analysis type</td>
+<td>Linear elastic</td>
+<td>See corrected plasticity write-up immediately below (the "identical objective within 0.04%" figure previously stated here was wrong; corrected 2026-08-10)</td>
+</tr>
+</tbody>
+</table>
+<p>Each optimization converged by its stop criteria (objective change &lt; 0.1%,
+density change &lt; 0.5%, sustained 4 cycles) in 24-32 design cycles, well
+inside the 50-cycle cap.</p>
+<h3>Corrected plasticity write-up (2026-08-10)</h3>
+<p>The text this section carried until 2026-08-03 claimed the elastic and
+plasticity-enabled runs were "identical within 0.04% on a plasticity-enabled
+run" and that removing plasticity bought a "60× slower stiffness-matrix
+path." Neither figure is what is on disk. Re-checked directly against the
+existing (un-rerun; this is a historical method-validation independent of
+the Section 5 v2 load correction) logs:</p>
+<ul>
+<li><strong>Peak stress agreement.</strong> The elastic surrogate's VF 0.40 design (cycle
+  24) reports a kept-element (ρ &gt; 0.5) peak von Mises of <strong>139.2 MPa</strong>
+  (<code>verify_v40_log.txt</code>). The same design's odb,
+  resolved with the plasticity-enabled material (<code>uca_topopt</code>, unsuffixed
+  run directory; its <code>.inp</code> carries the <code>*plastic</code> table absent from the
+  elastic decks), gives a kept-element peak of <strong>139.37 MPa</strong>
+  (<code>verify_plastic_check_v40_log.txt</code>, extracted this
+  pass, same method as <code>verify_v40.py</code>) with equivalent plastic strain
+  (PEEQ) identically zero at every kept element in all three load steps -
+  confirming the material never actually yields even though it is capable
+  of it. Difference: (139.37 − 139.2) / 139.2 = <strong>0.12%</strong> (0.14% using the
+  1-decimal figures 139.4 vs 139.2). This is a <strong>peak-stress</strong> comparison,
+  not a strain-energy/objective comparison - no such objective comparison
+  exists in the record, and the document should not have claimed one.</li>
+<li><strong>Wall-clock cost.</strong> Per-design-cycle FE-solve time, read directly from
+  the <code>tosca_driver</code> timestamps in <code>uca_topopt_stdout.log</code> (plasticity
+  run, VF 0.40) and <code>uca_topopt_v40_stdout.log</code> (elastic surrogate, VF
+  0.40, same design, same old loads): the <strong>first</strong> design cycle (cycle 0,
+  full/near-full density "blank," the most expensive cycle since the
+  stiffness matrix is factorized from scratch and the plastic material
+  first has to iterate a return-mapping solution) took <strong>353 s</strong> plastic
+  vs <strong>36 s</strong> elastic - a <strong>9.8×</strong> ratio, close to the record's prior
+  informal "about 335 s / about 35 s, ≈9.6×" note. Averaged over the full
+  24-cycle run (cycles 1-24, steady state, excluding the cycle-0 outlier),
+  the ratio narrows to <strong>81.8 s vs 27.1 s, ≈3.0×</strong>, because later cycles
+  benefit from a warm-started, already partially void-penalized stiffness
+  matrix. <strong>Neither number is anywhere near 60×.</strong> The defense brief's Q5
+  answer ("60× slower... in the optimization loop") is not supported by
+  any log on disk and should be corrected there as well (out of scope for
+  this document per the brief's step 8; flagged for whoever owns that
+  file).</li>
+<li><strong>Sources checked this pass:</strong> <code>UCA_fine_check.msg</code>,
+  <code>.dat</code>, <code>.com</code> (datacheck pre-pass on the 5.5 mm plasticity verification
+  model - fast, not representative of a design-cycle cost, kept only to
+  confirm the plastic material was active in that job);
+  <code>UCA_fine_verify_run.log</code> (the actual 5.5 mm plasticity-enabled solve,
+  8:17:18 PM to 8:25:01 PM, ≈461 s total across all 3 steps at a much
+  finer, unrelated mesh - not used for the cycle-timing ratio above, which
+  instead uses the matched-mesh, matched-VF <code>uca_topopt</code> vs <code>uca_topopt_v40</code>
+  pair); and the <code>tosca_driver</code> cycle timestamps in both stdout logs.</li>
+</ul>
+<h2>6B.2 Trade Curve</h2>
+<h3>SUPERSEDED (2026-08-03 trade curve, old loads)</h3>
+<p><strong>Preserved for the record. Not used below. Reason superseded: load
+vectors corrected (Section 5 v2): braking moment arm and missing lateral
+transfer in Case 1.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Design</th>
+<th style="text-align: right;">Mass [kg]</th>
+<th style="text-align: right;">Worst-case peak [MPa]</th>
+<th style="text-align: right;">FoS vs 560 MPa yield</th>
+<th style="text-align: right;">Max deflection [mm]</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Baseline blank</td>
+<td style="text-align: right;">17.4</td>
+<td style="text-align: right;">122.6</td>
+<td style="text-align: right;">4.6</td>
+<td style="text-align: right;">0.25</td>
+</tr>
+<tr>
+<td>VF 0.40</td>
+<td style="text-align: right;">9.2</td>
+<td style="text-align: right;">139.2</td>
+<td style="text-align: right;">4.0</td>
+<td style="text-align: right;">0.35</td>
+</tr>
+<tr>
+<td>VF 0.25 (recommended)</td>
+<td style="text-align: right;">7.1</td>
+<td style="text-align: right;">151.4</td>
+<td style="text-align: right;">3.7</td>
+<td style="text-align: right;">0.51</td>
+</tr>
+<tr>
+<td>VF 0.15</td>
+<td style="text-align: right;">5.8</td>
+<td style="text-align: right;">219.3</td>
+<td style="text-align: right;">2.6</td>
+<td style="text-align: right;">0.85</td>
+</tr>
+</tbody>
+</table>
+<p>Under the old (superseded) loads, Brake-in-Turn governed every design point
+in this table. That is no longer true - see the governing-case finding
+below.</p>
+<h3>Current trade curve (2026-08-10, Section 5 v2 loads)</h3>
+<p>Same three volume fractions, re-run under the corrected CF1/CF2/CF3 load
+table (<code>loads_v2_summary.json</code>) end to end: a fresh full-density baseline
+solve, a fresh Tosca deck (<code>UCA_TopOpt_Job_r2.inp</code>, elastic-only material,
+matching the proven production methodology above), and fresh Tosca
+optimizations at VF 0.40 / 0.25 / 0.15 (24 / 27 / 32 design cycles
+respectively, all converged within the 50-cycle cap, <code>_r2</code>-suffixed run
+directories).</p>
+<table>
+<thead>
+<tr>
+<th>Design</th>
+<th style="text-align: right;">Mass [kg]</th>
+<th style="text-align: right;">Brake-in-Turn [MPa]</th>
+<th style="text-align: right;">Cornering [MPa]</th>
+<th style="text-align: right;">Bumping [MPa]</th>
+<th>Governing case</th>
+<th style="text-align: right;">Governing peak [MPa]</th>
+<th style="text-align: right;">FoS vs 560 MPa</th>
+<th style="text-align: right;">Max deflection [mm]</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Baseline blank</td>
+<td style="text-align: right;">17.42</td>
+<td style="text-align: right;">77.19</td>
+<td style="text-align: right;">109.38</td>
+<td style="text-align: right;">26.34</td>
+<td>Cornering</td>
+<td style="text-align: right;">109.38</td>
+<td style="text-align: right;">5.12</td>
+<td style="text-align: right;">0.25</td>
+</tr>
+<tr>
+<td>VF 0.40</td>
+<td style="text-align: right;">9.20</td>
+<td style="text-align: right;">89.94</td>
+<td style="text-align: right;">112.34</td>
+<td style="text-align: right;">35.08</td>
+<td>Cornering</td>
+<td style="text-align: right;">112.34</td>
+<td style="text-align: right;">4.98</td>
+<td style="text-align: right;">0.33</td>
+</tr>
+<tr>
+<td><strong>VF 0.25 (recommended)</strong></td>
+<td style="text-align: right;"><strong>7.14</strong></td>
+<td style="text-align: right;"><strong>99.23</strong></td>
+<td style="text-align: right;"><strong>116.96</strong></td>
+<td style="text-align: right;"><strong>43.74</strong></td>
+<td><strong>Cornering</strong></td>
+<td style="text-align: right;"><strong>116.96</strong></td>
+<td style="text-align: right;"><strong>4.79</strong></td>
+<td style="text-align: right;"><strong>0.47</strong></td>
+</tr>
+<tr>
+<td>VF 0.15</td>
+<td style="text-align: right;">5.81</td>
+<td style="text-align: right;">135.89</td>
+<td style="text-align: right;">153.23</td>
+<td style="text-align: right;">95.37</td>
+<td>Cornering</td>
+<td style="text-align: right;">153.23</td>
+<td style="text-align: right;">3.65</td>
+<td style="text-align: right;">0.76</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Method statement.</strong> Every number in this table, on both the baseline and
+all three optimized designs, is a raw, unfiltered, kept-element (SIMP
+density ρ &gt; 0.5) maximum: masked straight from the full element/node
+arrays, no additional filtering, exactly as <code>verify_v25.py</code> established.
+The old interior-filter method in <code>peak_interior.py</code> (drop every kept
+element that shares a node with a killed element) is retired: it excludes
+the entire free surface of the optimized part, which is exactly where an
+optimized shape's peak stress lives. <code>peak_interior.py</code> is kept in the
+pipeline archive as a record of the retired method; none of its output is
+used here or anywhere in this pass.</p>
+<p><strong>Mass method.</strong> Two independent computations per design, and they agree:
+(1) sum of each design's own kept-element volumes (C3D10 corner-node
+tetrahedra, taken directly from that design's own final-cycle odb
+geometry) × density 7.85×10⁻⁹ t/mm³ - this is the number in the table
+above; (2) sanity cross-check against the historical (2026-08-03,
+different session, different load case, independently derived) mass
+figures for the same three volume fractions - 9.2 / 7.1 / 5.8 kg - which
+this pass's fresh geometry-based figures (9.199 / 7.143 / 5.809 kg) match
+to within 1% at every volume fraction, a meaningful agreement since design
+topology is governed primarily by the volume-fraction target and overall
+load-path character, not by the small shift in load magnitudes. (A planned
+third check - parsing <code>ASSEMBLY_DESIGN_ELEMS</code> / <code>ASSEMBLY_FROZEN_ELEMS</code>
+straight out of the <code>.inp</code> and re-summing against the independently-meshed
+baseline odb - did not reconcile: Tosca's internal element numbering in the
+density files does not match the source model's Abaqus element labels, so
+that specific cross-check was abandoned rather than reported as agreeing
+when it does not measure the same thing.)</p>
+<p><strong>Governing-case inversion (Section 5 v2 finding), confirmed in these
+results.</strong> Cornering governs every single design point in the new table
+above, baseline through VF 0.15 - not Brake-in-Turn, which governed every
+point in the old (superseded) table. This is the direct numeric
+consequence of the Section 5 v2 correction: Brake-in-Turn's peak load
+component dropped from 13,229 N to 7,718 N (the moment-arm and
+lateral-transfer fix), while Cornering's Fz = 13,534.5 N is unchanged. At
+the recommended VF 0.25 point, Brake-in-Turn is now 99.23 MPa against
+Cornering's 116.96 MPa - Cornering leads by 18%, not the other way round.</p>
+<p><strong>Knee-point recommendation: holds, with more margin than before.</strong> Every
+design point in the new table has a higher FoS and a lower deflection than
+the corresponding point in the old (superseded) table - a direct result of
+Brake-in-Turn's overall reduction. The <em>shape</em> of the trade curve is
+unchanged: mass falls cheaply from baseline through VF 0.40 to VF 0.25 (a
+59% mass cut costs only 7% more governing stress), then the cost per
+kilogram saved jumps sharply from VF 0.25 to VF 0.15 (a further 19% mass cut
+costs 31% more governing stress and 62% more deflection). That accelerating
+cost is still the knee, and it still sits between VF 0.25 and VF 0.15.</p>
+<p><strong>Independent hand-calc validation, specific to the VF 0.25 design.</strong> The
+defense brief's Q9 already carries an honest hand beam-calc cross-check
+that failed by 16.2x against the un-optimized blank, for a stated reason:
+that blank is a bulky multi-load-path solid, not a discrete beam. A second
+hand-calc, run against the VF 0.25 topology itself, a genuine two-strut
+structure with slender beam-like members, gives beam theory a real member
+to work with: sigma_hand comes out to 38.70 to 77.39 MPa (two load-sharing
+bounds, since the two struts meet the ball joint through a single merged
+region with no determinate split) against an FE value of 43.95 MPa at the
+same, geometry-frozen section, ratios of 0.88 and 1.76, a genuine PASS at
+both bounds. See Q9 in <code>P2_DEFENSE_BRIEF.md</code> for the full account and
+<code>strut_handcalc_v25.py</code> (pipeline_20260802) for the derivation.</p>
+<p>Unlike the old table, VF 0.15 no longer <em>fails</em> either check under the new
+loads (FoS 3.65 is still comfortably inside the 1.5-2.0 target band with
+margin to spare, and 0.76 mm deflection no longer approaches 1 mm) - so
+VF 0.15 is a legitimate design if maximum mass saving is the priority. VF
+0.25 remains the recommendation here because it sits at the point before
+the disproportionate stress/deflection cost begins, preserving margin
+against the assumptions in Section 5.8 (unmeasured CG height, track,
+scrub radius, roll distribution) - not because the old numbers forced it.</p>
+<p>The optimized topology is consistent across all three volume fractions: two
+tapered struts from the bushing tubes converging into a hollowed shell
+around the outboard ball joint, matching the pre-correction result and the
+Section 6.3 internal stress audit's load-path prediction - the corrected
+loads changed the numbers, not the shape of the answer.</p>
+<h2>6B.3 Verification of the Recommended Design</h2>
+<p><strong>SUPERSEDED, load-vectors basis only (2026-08-10): this fine-mesh
+verification below was performed on the OLD (pre-Section-5-v2) VF 0.25
+design and the OLD load set - its governing case (Brake-in-Turn at 151.4
+MPa, ahead of Cornering at 122.6 MPa) has been superseded by the
+governing-case inversion in 6B.2 above. The method (5.5 mm density-mapped
+soft-kill re-verification) remains valid and is not being second-guessed;
+only its numeric basis is stale. Per this pass's brief, the fine-mesh
+re-verification has not been re-run against the new VF 0.25 design (10 mm
+production-mesh raw kept-element maxima is the required extraction for
+this pass); a fresh 5.5 mm pass against the new VF 0.25 design is future
+work, not done here. Kept below for the record.</strong></p>
+<p>The VF 0.25 design was re-verified on a 5.5 mm mesh (192,833 C3D10,
+~855,000 DOF) by density mapping (nearest-centroid) and soft-kill material
+assignment (killed elements at E × 10⁻⁶), with full elastic-plastic
+material restored on the retained elements:</p>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th style="text-align: right;">10 mm mesh [MPa]</th>
+<th style="text-align: right;">5.5 mm interior [MPa]</th>
+<th>Agreement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Brake-in-Turn</td>
+<td style="text-align: right;">151.4</td>
+<td style="text-align: right;">155.4</td>
+<td>+2.6%</td>
+</tr>
+<tr>
+<td>Cornering</td>
+<td style="text-align: right;">122.6</td>
+<td style="text-align: right;">123.2</td>
+<td>+0.5%</td>
+</tr>
+<tr>
+<td>Bumping</td>
+<td style="text-align: right;">42.5</td>
+<td style="text-align: right;">39.3</td>
+<td>−7.5%</td>
+</tr>
+</tbody>
+</table>
+<p>Raw fine-mesh maxima (up to 232 MPa) occur exclusively in elements adjacent
+to the stair-stepped kill boundary (verified per element) and are
+artifacts of the discrete density representation, not features of the
+smooth design. Equilibrium closed to 0.0000% in all solves at both mesh
+levels, and equivalent plastic strain is identically zero everywhere: the
+design remains fully elastic under all three abuse cases.</p>
+<h2>6B.4 Fatigue Assessment</h2>
+<h3>SUPERSEDED (original 2026-08-03 text, marked superseded 2026-08-10)</h3>
+<p><strong>Original fatigue section arrived unscripted and irreproducible; rebuilt.</strong>
+The paragraph below is preserved verbatim (content and numbers unchanged
+from the original write) for the record only. It is not used anywhere in
+this report from 2026-08-10 forward, and none of its numbers should be
+cited as current.</p>
+<blockquote>
+<p>A stress-life assessment was performed for a 300,000 km service duty cycle
+(assumed representative spectrum: 10 to the 4th brake-in-turn events, 10 to
+the 5th limit cornering events, 10 to the 6th 2g bump events, all as R=0
+pulsating cycles at nominal, unfactored, event loads).</p>
+<p>Endurance limit, Marin-corrected for machined surface, size and 90%
+reliability: Se = 0.5 x UTS x 0.79 x 0.85 x 0.90 = <strong>219 MPa</strong> (UTS taken
+as 731 MPa for normalized SAE 4130).</p>
+<p>Worst Goodman-corrected amplitude (brake-in-turn): sigma_a,eq = <strong>52 MPa</strong>,
+a factor 4.2 below the endurance limit. All three event classes fall in
+the infinite-life regime; Miner damage sum is approximately 0. <strong>Fatigue
+does not govern this design; kinematic stiffness does.</strong> A confirmation
+run in fe-safe using the verification ODB is planned as a follow-up.</p>
+</blockquote>
+<h3>Fatigue Assessment v2 (2026-08-10 rebuild)</h3>
+<p>This section replaces the paragraph above entirely. Every number below
+comes from running <code>fatigue_v2.py</code>
+(plain CPython 3.11, no Abaqus dependency), with its full stdout captured
+to <code>fatigue_v2_log.txt</code>. The script
+consumes only the verified, already-solved Section 6B.2 stress numbers as
+literal inputs; it does not re-run, re-mesh, or re-solve any FE model.</p>
+<p><strong>Governing input.</strong> VF 0.25 (recommended design), Cornering case, raw
+unfiltered kept-element peak = 116.96 MPa. This is a factored FE result:
+the SAE k_d = 1.6 abuse factor is already baked into the applied load
+(Section 5.4/5.7 of <code>P2_Section5_LoadCases.md</code>). No interior filtering is
+applied anywhere in this assessment; that method is retired project-wide.</p>
+<p><strong>1. UTS derivation.</strong> The deck's hardening table (SAE 4130) caps at
+760 MPa true stress, 15% true plastic strain. That is an upper bound on
+true stress at this hardening-table extent, not a usable engineering UTS:
+true stress keeps climbing with necking-driven area reduction well past the
+real engineering ultimate point, so 760 MPa was not carried forward. The
+table's 0-plastic-strain point, 560 MPa, is the deck's modeled yield
+strength Sy.</p>
+<p>Two standard, citable SAE/AISI 4130 conditions were checked against Sy =
+560 MPa, rather than importing 731 MPa unreconciled:</p>
+<table>
+<thead>
+<tr>
+<th>Candidate</th>
+<th>Condition</th>
+<th>Source</th>
+<th style="text-align: right;">Published Sy</th>
+<th style="text-align: right;">Published Su</th>
+<th style="text-align: right;">Gap from deck Sy = 560 MPa</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Normalized at 870 C (1600 F)</td>
+<td>MatWeb / ASM Alloy Center Database, datasheet "AISI 4130 Steel, normalized at 870C (1600F)" (matguid e1ccebe90cf94502b35c2a4745f63593), fetched 2026-08-10</td>
+<td style="text-align: right;">435 MPa</td>
+<td style="text-align: right;">670 MPa</td>
+<td style="text-align: right;">28.7% (deck above)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Quenched and tempered, low-strength end of the standard tempering range</td>
+<td>MatWeb quenched-and-tempered AISI 4130 datasheet family, range summarized via modulusmetal.com, fetched 2026-08-10</td>
+<td style="text-align: right;">690 MPa</td>
+<td style="text-align: right;">862 MPa</td>
+<td style="text-align: right;">18.8% (deck below)</td>
+</tr>
+</tbody>
+</table>
+<p>The commonly quoted "normalized SAE 4130, Sy 460 MPa, Su 731 MPa" figure
+was also checked as the brief's starting reference point. It is a
+different, less specific citation than Candidate 1, and it is the exact
+number the original (2026-08-03) section imported unreconciled; it is
+recorded here only as the reference point, not carried forward.</p>
+<p>Neither candidate reconciles with the deck's Sy = 560 MPa within 10%.
+Candidate 2 is the numerically closer condition (18.8% gap versus 28.7% for
+Candidate 1), but per this rebuild's rule, the outcome when no condition
+reconciles is to carry forward the lower, more conservative, of the two
+candidate UTS values rather than the numerically closer one:</p>
+<p><strong>UTS carried forward = 670 MPa</strong> (Candidate 1, normalized, MatWeb/ASM),
+because it is lower than Candidate 2's 862 MPa. This avoids crediting the
+material with more strength than the deck's own hardening table supports.
+This choice, and the 10% reconciliation test itself, are stated plainly as
+judgment calls made in the absence of a clean match, not as a resolved
+citation.</p>
+<p><strong>2. Endurance limit (Shigley Marin equation).</strong> Se' = 0.5 x UTS = 335.0
+MPa. The 0.5 factor is valid only for UTS below about 1400 MPa (Shigley's
+Mechanical Engineering Design, Budynas and Nisbett); 670 MPa clears this
+comfortably.</p>
+<p>Every Marin factor, with its citation and reasoning:</p>
+<table>
+<thead>
+<tr>
+<th>Factor</th>
+<th>Value(s)</th>
+<th>Reason</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ka, surface</td>
+<td>Machined: 0.804. As-forged: 0.419</td>
+<td>ka = a x Su^b, Su in MPa (Shigley Table 6-2). Machined/cold-drawn: a=4.51, b=-0.265. As-forged: a=272, b=-0.995. As-forged, not hot-rolled, is used as the rough-surface route: Shigley's table has no separate "cast" row, and as-forged is the roughest tabulated category, the closest standard analog to an unmachined cast surface; hot-rolled is a distinct, smoother category for rolled bar stock, not a cast or forged blank. Manufacturing route is still open project-wide, so both routes are carried forward.</td>
+</tr>
+<tr>
+<td>kb, size</td>
+<td>0.806 (conservative, used); 0.938 (smaller estimate, shown only, not used)</td>
+<td>Rotating-beam-equivalent-diameter approach for a non-circular, non-rotating section (Shigley Section 6-9), a known approximation since the arm is not a rotating shaft. Exact local strut geometry at the governing location is unmeasured (out of scope); two labeled engineering estimates were built from the bounding box (X 339.88 mm, Y 67.52 mm, Z 326.34 mm, <code>geom_dims_log2.txt</code>) and the 6 mm frozen-collar minimum member size: a "small" estimate (Y span x sqrt(VF 0.25), then an extra 0.5 conservative shrink toward the necked-down local section, giving 16.88 mm, well above the 6 mm floor) and a "large" estimate (the raw Y span, 67.52 mm). Per Shigley's own kb formula, kb decreases as diameter increases, so the smaller estimate actually gives the larger, less conservative kb; this corrects a naive "smaller is always conservative" framing. The larger estimate is carried forward for kb because it gives the lower, more conservative Se. Both diameters were converted via Shigley's non-circular-section formula d_e = 0.808 x sqrt(h x b), assuming a square local section h = b (no independent width data), before applying the kb formula.</td>
+</tr>
+<tr>
+<td>kc, load</td>
+<td>1.0</td>
+<td>Governing case (Cornering) is a transverse tip-like load on a cantilevered arm: the critical section sees bending, not axial or torsional loading. Shigley's bending row gives kc = 1.0.</td>
+</tr>
+<tr>
+<td>kd, temperature</td>
+<td>1.0</td>
+<td>Operating near room temperature, no elevated-temperature service in this application; Shigley's default at or below room temperature.</td>
+</tr>
+<tr>
+<td>ke, reliability</td>
+<td>0.753</td>
+<td>99.9% reliability chosen, matching a typical automotive structural durability target; Shigley Table 6-5 gives ke = 0.753 at 99.9%.</td>
+</tr>
+<tr>
+<td>Kf, notch</td>
+<td>Not applied</td>
+<td>The 116.96 MPa Cornering figure is a raw, unfiltered, kept-element FE maximum: it already includes the real geometric stress concentration from the fillets and local mesh at the governing location, it is not a nominal section stress. Applying a textbook Kt/Kf on top would double count that same geometric effect. What this leaves unaddressed: true material notch sensitivity and surface-finish-driven micro-notch effects below this mesh's resolution, neither of which the FE peak or ka captures.</td>
+</tr>
+</tbody>
+</table>
+<p>Resulting endurance limits, both surface routes:</p>
+<ul>
+<li><strong>Se (machined) = 0.804 x 0.806 x 1.0 x 1.0 x 0.753 x 335.0 = 163.46 MPa</strong></li>
+<li><strong>Se (as-forged) = 0.419 x 0.806 x 1.0 x 1.0 x 0.753 x 335.0 = 85.26 MPa</strong></li>
+</ul>
+<p><strong>3. Service-load stress amplitude.</strong> The 116.96 MPa Cornering peak is a
+factored-load result (k_d = 1.6 already applied). A genuine fatigue
+amplitude needs the service-load stress, and the model is confirmed linear
+elastic at this load level (PEEQ = 0 in all three load steps, Section
+6B.1/6B.3), so stress scales linearly with load: dividing the factored peak
+by k_d recovers the unfactored service peak exactly, with no approximation.</p>
+<ul>
+<li>Step 1: service peak stress = 116.96 / 1.6 = <strong>73.10 MPa</strong></li>
+<li>Step 2: the cycle is defined as R = 0 (service loads pulsate from zero to
+  this peak and back to zero, tension-release repeated loading, not fully
+  reversed): sigma_max = 73.10 MPa, sigma_min = 0 MPa, sigma_mean =
+  sigma_amp = sigma_max / 2 = <strong>36.55 MPa</strong></li>
+</ul>
+<p><strong>4. Modified Goodman margin, both routes, equal prominence.</strong> Goodman
+line: sigma_amp / Se + sigma_mean / Su = 1 / n_f.</p>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th style="text-align: right;">Se [MPa]</th>
+<th style="text-align: right;">sigma_amp / Se</th>
+<th style="text-align: right;">sigma_mean / Su</th>
+<th style="text-align: right;">Sum</th>
+<th style="text-align: right;">n_f</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Machined</td>
+<td style="text-align: right;">163.46</td>
+<td style="text-align: right;">0.2236</td>
+<td style="text-align: right;">0.0546</td>
+<td style="text-align: right;">0.2782</td>
+<td style="text-align: right;"><strong>3.595</strong></td>
+<td>Survives (n_f &gt; 1)</td>
+</tr>
+<tr>
+<td>As-forged</td>
+<td style="text-align: right;">85.26</td>
+<td style="text-align: right;">0.4287</td>
+<td style="text-align: right;">0.0546</td>
+<td style="text-align: right;">0.4832</td>
+<td style="text-align: right;"><strong>2.069</strong></td>
+<td>Survives (n_f &gt; 1)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Both routes pass.</strong> The as-forged route carries roughly half the margin
+of the machined route (n_f 2.069 versus 3.595), which is expected given the
+as-forged ka penalty, but it does not fail: n_f stays above 1 on both
+routes at the governing Cornering event.</p>
+<p><strong>5. Duty cycle and Miner argument.</strong> The assumed 300,000 km spectrum is
+carried forward unchanged: 10^4 brake-in-turn events, 10^5 cornering
+events, 10^6 bump events, all R = 0 pulsating cycles. This spectrum is an
+<strong>assumption still pending final confirmation</strong>, not an
+OEM-measured duty cycle.</p>
+<p>For the governing Cornering event class (sigma_amp = 36.55 MPa) at both
+routes: sigma_amp is below Se on both routes (163.46 MPa machined, 85.26
+MPa as-forged), so in the classical S-N infinite-life idealization this
+event class contributes zero cycles to a Miner damage sum on either route.
+No S-N slope was ever defined for this project, so no finite N is
+fabricated here; the zero-damage statement is the classical idealization's
+own conclusion, stated plainly rather than dressed up with a manufactured
+number.</p>
+<p><strong>What this fatigue analysis is not.</strong> No fe-safe run has been performed;
+this is a hand (scripted) stress-life calculation only. No multiaxial
+stress treatment was applied; the FE peak is a single scalar von Mises
+value, not a full multiaxial fatigue criterion. No measured,
+vehicle-instrumented load spectrum exists; the 300,000 km duty cycle above
+is an assumption pending sign-off, not measured data. These gaps are
+stated here so they are not mistaken for a completed durability
+certification.</p>
+<h2>6B.5 Interpretation Output and Limitations</h2>
+<p>VF 0.25 remains the recommended design after the 2026-08-10 v3 compute pass
+(see 6B.2); the recommendation basis changed (new governing case, new
+margins) but the selected volume fraction did not, so the exported
+interpretation geometry below is still the right one - it was not
+re-exported this pass since the VF 0.25 topology itself did not change
+shape, only its stress numbers under the corrected loads (6B.2).</p>
+<p>A smoothed iso-surface (ρ = 0.5) of the recommended design was exported as
+<code>UCA_v25_interpreted.stl</code> as the reference envelope for a production CAD
+rebuild. Limitations, stated:</p>
+<ol>
+<li>Densities live on a 10 mm mesh; surface detail below ~10 mm is not
+   design information. The STL is a rebuild reference, not final geometry.</li>
+<li>Two locally seeded 1.2 mm edges (geometry repair, Section 4.2 v2) leave
+   a small element-size non-uniformity; Tosca's size-ratio advisory was
+   accepted as the cost of meshing the imported geometry uniformly.</li>
+<li>The duty-cycle spectrum is assumed, not vehicle-measured; stated event
+   counts bound typical durability practice.</li>
+<li>Final certification numbers belong to the re-meshed interpreted CAD
+   geometry (planned follow-up), not the soft-kill representation.</li>
+</ol>
+    <p class="report-source">Report text as written for the project; figures are on the project summary page.</p>
+  </article>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <dl class="tblock">
+      <div><dt>Drawn by</dt><dd>Usman Bashir</dd></div>
+      <div><dt>Contact</dt><dd><a href="mailto:usman.bashir1933@gmail.com">usman.bashir1933@gmail.com</a></dd></div>
+      <div><dt>Checked</dt><dd>Every number traces to the project report</dd></div>
+    </dl>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

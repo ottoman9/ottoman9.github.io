@@ -1,0 +1,1272 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ahmed Body External Aerodynamics: Validation, Drag Crisis, and a Spoiler Study in OpenFOAM | Technical report | Usman Bashir</title>
+<meta name="description" content="Full technical report: Ahmed Body External Aerodynamics: Validation, Drag Crisis, and a Spoiler Study in OpenFOAM.">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body class="report-page">
+
+<header class="site">
+  <div class="bar">
+    <div class="wrap nav-row">
+      <a class="brand" href="../index.html">Usman Bashir</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">Menu</button>
+      <nav class="primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#publication">Publication</a>
+        <a href="../index.html#tools">Tools</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </div>
+  <div class="legend" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+</header>
+
+<main>
+  <div class="wrap report-bar">
+    <a class="crumb" href="../projects/ahmed-body-cfd.html">Back to the project summary</a>
+    <button class="btn quiet print-btn" type="button" onclick="window.print()">Print or save as PDF</button>
+  </div>
+  <article class="report">
+<h1>Ahmed Body External Aerodynamics: Validation, Drag Crisis, and a Spoiler Study in OpenFOAM</h1>
+<p><strong>Author:</strong> Usman Bashir, BSc Metallurgical and Materials Engineering
+<strong>Date:</strong> 2026-08-16
+<strong>Solver:</strong> OpenFOAM v2512, <code>simpleFoam</code> (steady), k-omega SST with wall functions</p>
+<p><em>Internal working records cited in this report (for example DECISIONS, RESULTS_LOG and the sources ledger) are available on request.</em></p>
+<hr />
+<h2>1. Summary</h2>
+<p>I set out to answer three questions with one open-source CFD toolchain, in
+order, so that each answer had to be earned before the next one was allowed.
+First, can this toolchain reproduce a published experimental drag measurement
+on a standard automotive benchmark, with a mesh-independence study and a
+tolerance band written down before any solve ran? Second, if it can, does it
+put the benchmark's famous <strong>drag crisis</strong> (a sudden fall in drag as the rear
+slant is steepened past a critical angle) where the experiment puts it? Third,
+can I then use the validated setup to solve an actual design problem, adding a
+small roof spoiler to a high-drag configuration, and quantify what it buys?</p>
+<p>The three headline results:</p>
+<ol>
+<li><strong>Validation passed at both gate angles.</strong> On the finest mesh, Cd = 0.3179
+   at a 25 degree slant and Cd = 0.2904 at 35 degrees, inside the bands
+   0.287 to 0.347 and 0.267 to 0.327 respectively (<code>RESULTS_LOG.md</code> 1.B to
+   1.D). Both mesh ladders converged, and the model ranked the two angles the
+   same way the experiment does. Getting there was not clean: the 35 degree
+   result initially failed the band I had pre-declared, and Section 4 describes
+   in full what I did about that and why the band was eventually re-anchored.</li>
+<li><strong>The drag crisis was reproduced, and located to a 1.25 degree interval.</strong>
+   Drag rises to a peak of Cd = 0.3339 at 28.75 degrees and falls 0.0290 across
+   the next 1.25 degrees, so the crisis sits in <strong>28.75 to 30 degrees</strong> against
+   an experimental value of approximately 30 degrees (<code>RESULTS\STAGE2_RESULTS.md</code>
+   Section 11.6). A second, independent signature, the collapse of the solution
+   oscillation from 4.63 percent to 0.68 percent peak to peak, lands in exactly
+   the same interval.</li>
+<li><strong>A 2.0 mm roof trailing-edge strip cut drag by 8.42 percent at zero pitch,
+   for a reason I did not predict.</strong> Deltas against a method-identical baseline
+   were -0.0271 at 0 degrees of pitch, -0.0176 at 5 degrees, and +0.0306 at 15
+   degrees (<code>RESULTS\STAGE3_RESULTS.md</code> Section 1). Every spoiler case, including
+   the harmful one, collapsed the baseline's 6.56 percent solution oscillation to
+   about 0.65 percent. That is the pre-declared signature of a regime change, so
+   the honest headline is not "a spoiler saved 8 percent" but "this spoiler trips
+   a pre-crisis body into the post-crisis separated regime at every pitch tested,
+   and pitch then sets the drag of the separated configuration".</li>
+</ol>
+<p>The discipline that holds all three together is pre-registration: predictions,
+thresholds and pass bands were written into <code>DECISIONS.md</code> before the runs that
+would test them existed. Several of those predictions were refuted. They are
+reported as refuted in Section 9, because a scorecard with no failures in it is
+evidence that the scorecard was written afterwards.</p>
+<hr />
+<h2>2. The benchmark, and why I chose it</h2>
+<p>A car spends most of its highway fuel pushing air out of the way, and roughly
+85 percent of a simplified car's drag comes from the low pressure pocket behind
+it rather than from the air hitting the front (<code>P3_SOURCES.md</code> A3). Shaping the
+back of a car is therefore worth more than shaping the front, and the shape of
+the back is where the interesting failure of intuition lives.</p>
+<p>In 1984, Ahmed, Ramm and Faltin published a simplified car-like block that
+strips away mirrors, rotating wheels and engine bay flow so that one question
+can be isolated: what does the shape of the rear do to drag (<code>P3_SOURCES.md</code>
+A1). The body is a box with a rounded nose and a slanted rear window, the
+<strong>slant</strong>, whose angle is adjustable. It has been the standard benchmark for
+automotive CFD ever since.</p>
+<p>The landmine in it is this. Common sense says a steeper, more fastback-like
+slant should shed air more smoothly than a steep van-like drop. The Ahmed body
+proves common sense wrong. Drag rises steadily as the slant angle increases,
+then near <strong>30 degrees</strong> it suddenly falls, because the flow over the slant
+changes character completely (<code>P3_SOURCES.md</code> C5). Below the crisis the air
+mostly follows the slant, and two swirling ropes of air peel off its side
+edges, the <strong>C-pillar vortices</strong>, named for the roof pillar they trail from on
+a real car. Those vortices have low pressure cores that suck the slant surface
+pressure down and therefore add drag, and they strengthen as the angle steepens.
+Past the crisis the slant is too steep for the flow to follow, so it detaches
+right at the top, the C-pillar vortices collapse, and the wake becomes a single
+larger low-energy recirculation like the one behind a flat-backed van. That
+separated wake costs <strong>less</strong> drag than the strong-vortex case just before it.</p>
+<p>I chose this benchmark for three reasons. It has a published experimental drag
+measurement to validate against, so the first stage can genuinely fail. It has
+a well-documented physical phenomenon whose location a solver either finds or
+does not, so the second stage is a real test of the tool rather than a
+demonstration of the tool. And it has a documented weak spot for the exact
+model class I could afford: ERCOFTAC's best-practice material for this case
+states that high-Reynolds wall-function treatments "generally do not predict
+separation at all" at 25 degrees (<code>P3_SOURCES.md</code> L2), so I entered the project
+with a named way to fail and said so in advance (<code>DECISIONS.md</code> D14).</p>
+<p>The drag coefficient used throughout is the standard definition,</p>
+<pre><code>Cd = F_drag / (0.5 * rho * v^2 * A)
+</code></pre>
+<p>normalised on the raw width by height rectangle, A = 0.112 m^2
+(<code>P3_SOURCES.md</code> B3), rather than the angle-dependent projected silhouette, so
+that Cd at different slant angles stays directly comparable across the sweep
+and against the literature.</p>
+<p><strong>One point of history that belongs here rather than in a footnote.</strong> The
+project's original brief named a CAD-embedded commercial tool, SolidWorks Flow
+Simulation, as the solver under study, and Stage 1 setup work had already begun
+in it. I reversed that decision on day one of execution (<code>DECISIONS.md</code> D12).
+The reason was audience: a scriptable, solver-level workflow with publishable
+dictionaries is what a research supervisor can actually inspect, and optimising
+for tool-name recognition was optimising for the wrong reader. The partial
+setup work was discarded as sunk cost rather than salvaged. All CAD, the domain
+sizing, the gate angles, the stilt decision and both validation bands survived
+the switch unchanged, because they are physics and geometry decisions rather
+than solver settings. <code>BRIEF.md</code> Sections 0, 2 and 7 still carry the original
+tool's name, because the promised rewrite of those sections never happened;
+the superseded wording is preserved there and marked, not deleted.</p>
+<hr />
+<h2>3. Methods</h2>
+<h3>3.1 Geometry and CAD provenance</h3>
+<p>I built the body parametrically in SolidWorks through its COM API with a Python
+script (<code>CAD\build_ahmed_half.py</code>), so that any slant angle can be regenerated
+from one source of truth rather than clicked into existence. No geometry in
+this project was drawn by hand. The 25 and 35 degree half-models
+(<code>CAD\Ahmed_half_25deg.SLDPRT</code>, <code>CAD\Ahmed_half_35deg.SLDPRT</code>) were built and
+verified on 2026-08-11 (<code>RESULTS_LOG.md</code> 1.A), and the later sweep and
+refinement angles came from the same script.</p>
+<p>Dimensions are corroborated against a curated ERCOFTAC case-description page
+covering overall length 1.044 m, width 0.389 m, height 0.288 m, slant length
+222 mm, ground clearance 50 mm and stilt diameter 30 mm (<code>P3_SOURCES.md</code> B9).
+The original SAE dimensioned drawing itself was never opened directly: two
+attempts to reach the case page's own domain failed at the network level, and
+that gap is recorded rather than papered over. Residual uncertainty is limited
+to fine detail (exact stilt longitudinal positions, fillet radii), not the
+headline dimensions.</p>
+<p>Three build choices matter downstream. The slant length is held at 222 mm and
+rotated about the roof trailing edge, so overall length varies with angle
+(1023.200 mm at 25 degrees, 1003.852 mm at 35 degrees). The nose is a single
+R100 fillet (<code>P3_SOURCES.md</code> B13). And the four support stilts are <strong>modelled</strong>
+(<code>DECISIONS.md</code> D11), because the experiment measured the body on its stilts;
+omitting them under-predicts total Cd by roughly 0.017 to 0.02 at 25 degrees
+(<code>P3_SOURCES.md</code> B10), which would have biased validation in the flattering
+direction. That choice returns in Section 4 as the single most consequential
+piece of bookkeeping in the project.</p>
+<p>Measured from the model: full frontal area 0.112032 m^2, half-body 0.056016
+m^2. This also resolved an apparent source discrepancy, since 0.112 and 0.115
+m^2 differ by exactly the front stilt pair's silhouette.</p>
+<h3>3.2 Domain</h3>
+<p>Half-model with a symmetry plane at the centreline (<code>DECISIONS.md</code> D2), which
+halves the cell count for the same resolution. The cost is structural: a
+symmetry plane forces a perfectly mirror-symmetric solution, so no side-to-side
+wake asymmetry can appear. For mean Cd, the quantity I validate and sweep, that
+asymmetry largely cancels, and ERCOFTAC states a half body is sufficient for
+steady RANS on this case (<code>P3_SOURCES.md</code> L24). It would be the wrong choice
+for a study of wake bistability or yaw, which is why no such claim appears
+anywhere in my results.</p>
+<p>Domain sized from best-practice guidance written for this benchmark specifically
+(<code>DECISIONS.md</code> D8): inlet 3 body lengths upstream, outlet beyond 5 body lengths
+downstream, half-width 1L, height 1.35L, giving a blockage ratio of 3.8 percent,
+inside the under-5 percent threshold. Exact extents used: inlet x = -3.132 m,
+outlet x = +6.264 m, top y = 1.409 m, side z = 1.044 m, symmetry at z = 0, and a
+no-slip ground at y = 0. Top and side boundaries are slip, representing an
+unbounded stream rather than tunnel walls. A single domain serves both gate
+angles, so the 25 versus 35 degree comparison is a controlled A/B rather than
+two separately tuned setups.</p>
+<p>Speed convention: 40 m/s, Re = 2.784 x 10^6, matching the Lienhart and Becker
+LDA campaign whose wake field I compare against (<code>P3_SOURCES.md</code> D3), with
+kinematic viscosity set so the Reynolds number lands exactly.</p>
+<h3>3.3 Mesh ladder</h3>
+<p>Meshing follows OpenFOAM's own external aerodynamics route (<code>DECISIONS.md</code>
+D13): <code>blockMesh</code> fills the domain with cubes, <code>snappyHexMesh</code> cuts the body
+out, snaps the cut cells onto the surface, and grows prism layers along it. Two
+refinement boxes sit around the body and its near wake.</p>
+<table>
+<thead>
+<tr>
+<th>Rung</th>
+<th>blockMesh divisions</th>
+<th>Background cell</th>
+<th>Cells (25 deg, measured)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Coarse</td>
+<td>144 x 22 x 16</td>
+<td>65.3 mm</td>
+<td>483,847</td>
+</tr>
+<tr>
+<td>Medium</td>
+<td>189 x 28 x 21</td>
+<td>50.0 mm</td>
+<td>1,020,869</td>
+</tr>
+<tr>
+<td>Fine</td>
+<td>243 x 36 x 27</td>
+<td>38.8 mm</td>
+<td>2,038,349</td>
+</tr>
+</tbody>
+</table>
+<p>Every cell in the mesh shrinks by the same linear factor of about 1.29 per
+rung. The snappyHexMesh levels and the refinement box extents are held
+byte-identical across all three rungs, so the ladder tests "does the answer
+change as everything gets finer" rather than "does the answer change because
+the wake got relatively more refined". There is one deliberate exception: the
+near-wall prism stack (3 layers, 0.6 mm first layer, expansion 1.15, total
+2.08 mm) is held fixed in absolute terms. If it shrank with the mesh, y+ would
+fall by 1.29 per rung and the fine rung would land its first cell in the buffer
+layer, where neither wall functions nor wall-resolved treatment is valid, and
+the ladder would silently become a comparison of three different wall models
+wearing the same name.</p>
+<p>The ladder is sized to a compute ceiling, not to what the case deserves, and I
+state the gap plainly: published validations closest to this project ran 16.6
+million cells and a 3.7 to 10.1 million three-mesh study (<code>P3_SOURCES.md</code> L8,
+L11), and the coarse rung at 483,847 cells sits about 3 percent below
+ERCOFTAC's stated 0.5 million floor for a wall-function half-body
+(<code>P3_SOURCES.md</code> L3).</p>
+<h3>3.4 Solver, turbulence model and extraction rules</h3>
+<p>Steady <code>simpleFoam</code> with k-omega SST and standard wall functions
+(<code>nutkWallFunction</code> on body and ground), first cell at roughly 0.3 mm off the
+wall (<code>DECISIONS.md</code> D14, D15). Steady rather than transient is a budget
+choice, not an accuracy choice, and D14 says so in those words before any
+result existed: a transient solve of this case costs one to two orders of
+magnitude more compute for the same mesh, against six Stage 1 runs plus a
+nine-angle sweep plus four spoiler cases. Both published OpenFOAM validations
+of this case also used steady <code>simpleFoam</code> (<code>P3_SOURCES.md</code> L8, L9).</p>
+<p>Discretisation follows the shipped v2512 <code>motorBike</code> case with one deliberate
+upgrade: second-order bounded <code>limitedLinear 1</code> on the turbulence equations in
+place of first-order upwind, because ERCOFTAC asks for second order and the
+turbulence transport is what carries the separation prediction that decides the
+whole question (<code>P3_SOURCES.md</code> L4, L15). <code>residualControl</code> is set at 1e-5 as a
+<strong>detector</strong>, not an expectation: steady RANS on separating bluff bodies is
+documented as entering a limit cycle rather than converging, with Ahmed-body
+residuals not dropping below about 1e-3 (<code>P3_SOURCES.md</code> L20). Every run goes
+to a fixed 2,000 iterations, which is what the canonical tutorial does.</p>
+<p>The extraction rule is fixed in advance and applied identically to every rung,
+every angle and every spoiler case (<code>DECISIONS.md</code> D15): reported Cd is the
+arithmetic mean of the last 400 of 2,000 iterations, column 2 of
+<code>postProcessing/forceCoeffs/0/coefficient.dat</code>. If that window shows more than
+2 percent peak-to-peak variation, the result is logged as oscillating and
+reported as a mean with its band printed next to it, never smoothed into a
+single clean number. Reference values are set once and never varied: <code>magUInf</code>
+40, <code>lRef</code> 1.044 (the zero-slant length every literature value normalises on,
+not the physical length of the angled body), <code>Aref</code> 0.056016 m^2 so that the
+half-model Cd is directly full-body equivalent, and <code>liftDir</code> set explicitly
+because a <code>CofR</code>-only specification in v2512 would silently report a sideforce
+coefficient labelled as lift (<code>P3_SOURCES.md</code> L18). The <code>body</code> patch includes
+all four stilts, so stilt drag is inside every reported Cd by construction.</p>
+<h3>3.5 Compute</h3>
+<p>All production solves ran on a <strong>16-core cloud VM</strong> (IBM Cloud, <code>p3-solver-ibm</code>,
+Frankfurt, 16 physical cores and 32 vCPU), with <code>snappyHexMesh</code> serial and
+<code>simpleFoam</code> on 16 MPI ranks using <code>scotch</code> decomposition. Typical medium-rung
+case: about 26 minutes end to end. The Stage 3 queue of four cases took 4 h 34
+min; the Stage 2 sweep of five new cases took 2 h 10 min 50 s; the D16
+investigation of eight cases took 2 h 12 min of solver time.</p>
+<p><strong>My productive solve compute came to about 15 US dollars, at approximately
+$1.06 per hour of VM uptime.</strong> The certified total I was actually billed was
+34.23 US dollars, because I once left the cloud instance idle overnight after
+a session interruption stalled the copy-back; I record that here as an
+operational lesson, and it does not affect the solves themselves
+(<code>P3_DEFENSE_BRIEF.md</code> Section 2, consolidating the per-stage figures in
+<code>RESULTS\D16_RESULTS.md</code> Section 1, <code>RESULTS\STAGE2_RESULTS.md</code> Section 11.10
+and <code>RESULTS\STAGE3_RESULTS.md</code> Section 10). That distinction is worth stating
+because it sets the honest boundary of everything below: this is a study
+designed to be defensible at a cost a student can pay, not one designed to be
+definitive.</p>
+<hr />
+<h2>4. Stage 1: validation, the band failure, and the re-anchoring</h2>
+<h3>4.1 What Stage 1 had to prove</h3>
+<p>Stage 1 was written to buy trust, and to be capable of failing. Four criteria,
+all pre-declared in <code>BRIEF.md</code> Section 2 before any solve: the mesh ladder must
+show genuine convergence at both angles (shrinking, one-directional
+mesh-to-mesh change, with scatter to be named as scatter); the fine-mesh Cd at
+both angles must sit inside a pre-declared band; the model must rank the two
+angles the same way the experiment does; and the wake topology must
+qualitatively match a laser-Doppler anemometry reference at 25 degrees.</p>
+<p>I chose 25 and 35 degrees because they bracket the approximately 30 degree
+crisis and because they are the two angles the Lienhart and Becker LDA campaign
+measured, so six runs buy both a force check and a wake check
+(<code>DECISIONS.md</code> D4).</p>
+<h3>4.2 The ladder</h3>
+<p><strong>25 degrees</strong> (<code>RESULTS_LOG.md</code> 1.B):</p>
+<table>
+<thead>
+<tr>
+<th>Rung</th>
+<th>Cells</th>
+<th>Cd</th>
+<th>Peak-to-peak</th>
+<th>Mesh-to-mesh change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Coarse</td>
+<td>483,847</td>
+<td>0.3457</td>
+<td>7.1%</td>
+<td></td>
+</tr>
+<tr>
+<td>Medium</td>
+<td>1,020,869</td>
+<td>0.3217</td>
+<td>5.75%</td>
+<td>0.0240</td>
+</tr>
+<tr>
+<td>Fine</td>
+<td>2,038,349</td>
+<td>0.3179</td>
+<td>3.48%</td>
+<td>0.0038</td>
+</tr>
+</tbody>
+</table>
+<p><strong>35 degrees</strong> (<code>RESULTS_LOG.md</code> 1.C):</p>
+<table>
+<thead>
+<tr>
+<th>Rung</th>
+<th>Cells</th>
+<th>Cd</th>
+<th>Peak-to-peak</th>
+<th>Mesh-to-mesh change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Coarse</td>
+<td>483,268</td>
+<td>0.3142</td>
+<td>2.4%</td>
+<td></td>
+</tr>
+<tr>
+<td>Medium</td>
+<td>1,024,857</td>
+<td>0.2929</td>
+<td>0.64%</td>
+<td>0.0213</td>
+</tr>
+<tr>
+<td>Fine</td>
+<td>2,050,001</td>
+<td>0.2904</td>
+<td>0.0025%</td>
+<td>0.0025</td>
+</tr>
+</tbody>
+</table>
+<p>Both ladders converge: the change shrinks by a factor of 6.3 at 25 degrees and
+8.5 at 35 degrees, monotonically and in one direction. This is convergence, not
+scatter, by the definition written down beforehand. Criterion 3 also passes,
+since both the experiment and the model put 25 degrees above 35 degrees, and
+ranking two angles correctly is a harder test to fake than matching one
+absolute number.</p>
+<h3>4.3 The band failure</h3>
+<p>Criterion 2 did not pass. Against the original bands, anchored on Ahmed's 1984
+measurements at 60 m/s (0.26 to 0.32 at 25 degrees, 0.22 to 0.28 at 35
+degrees), the 25 degree fine mesh passed at 0.3179 and the <strong>35 degree fine
+mesh missed by 0.0104</strong> (<code>RESULTS\gate_check_20260812_ibmvm.md</code>). The miss was
+not noise: the run was dead steady over its trailing window and the ladder had
+converged, so it was a bias.</p>
+<p>The first thing I did was not touch the band.</p>
+<h3>4.4 The investigation (D16)</h3>
+<p>I wrote a ranked diagnosis from the literature and turned it into an eight-case
+matrix in which <strong>every case is the control with exactly one change</strong>, verified
+by directory diff before anything ran, with the expected direction and size of
+each change written down before the run existed, plus a four-part adoption
+criterion and a stop rule (<code>DECISIONS.md</code> D16, results
+<code>RESULTS\D16_RESULTS.md</code>). The control was the 35 degree medium rung at
+Cd = 0.2929.</p>
+<table>
+<thead>
+<tr>
+<th>Run</th>
+<th>Single change</th>
+<th>Observed Cd</th>
+<th>Delta</th>
+<th>Expectation met</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>R1</td>
+<td>ERCOFTAC inlet turbulence values</td>
+<td>0.2920</td>
+<td>-0.0009</td>
+<td>No, direction wrong</td>
+</tr>
+<tr>
+<td>R2</td>
+<td>Slip floor ahead of the body</td>
+<td>0.2926</td>
+<td>-0.0003</td>
+<td>No</td>
+</tr>
+<tr>
+<td>R3</td>
+<td>Cross-section enlarged, blockage 3.81% to 1.71%</td>
+<td>0.2883</td>
+<td>-0.0046</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr>
+<td>R4</td>
+<td><code>nutUSpaldingWallFunction</code> instead of <code>nutkWallFunction</code></td>
+<td>0.2934</td>
+<td>+0.0005</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr>
+<td>R5</td>
+<td>Near-wall stack to 5 layers at 0.3 mm</td>
+<td>0.2979</td>
+<td>+0.0050</td>
+<td>No, direction wrong</td>
+</tr>
+<tr>
+<td>R6</td>
+<td>Realizable k-epsilon instead of k-omega SST</td>
+<td>0.3008</td>
+<td>+0.0079</td>
+<td>No, falsified outright</td>
+</tr>
+<tr>
+<td>R7</td>
+<td>First-order turbulence convection</td>
+<td>0.2917</td>
+<td>-0.0012</td>
+<td><strong>Yes</strong></td>
+</tr>
+<tr>
+<td>R8</td>
+<td>R3's enlarged domain applied at 25 degrees</td>
+<td>0.3244</td>
+<td>+0.0027 vs the 25 deg control</td>
+<td>No, above the guard</td>
+</tr>
+</tbody>
+</table>
+<p>Three of seven met their pre-declared expectation. <strong>Nothing was adopted</strong>, and
+the stop rule fired on its first branch. The best candidate, R3, closed about a
+third of the gap and then broke the other angle when tested there, which is
+exactly the failure mode R8 was budgeted to catch. Even naively stacking all
+seven deltas gives +0.0064, the wrong way.</p>
+<p>The most informative single result is R6. Swapping to the k-epsilon family was
+the matrix's one chance to blame the turbulence model, and Cd rose by 0.0079
+instead of falling while the solution went from 0.64 percent to 23.95 percent
+peak-to-peak. That falsifies the model-family explanation outright.</p>
+<p>What the matrix bought is a sentence that was an assertion before it ran and is
+a measured statement afterwards: the residual is <strong>not</strong> attributable to
+free-stream turbulence, floor treatment, wall-function formulation, near-wall
+resolution, turbulence-model family, or convection scheme, because each was
+tested one at a time and none of them accounts for it.</p>
+<h3>4.5 The re-anchoring (D17) and its safeguards</h3>
+<p>That left two untested candidates, and the cheap one was the anchor itself. My
+bands were built on a 60 m/s experiment while I solve at 40 m/s, and the 40 m/s
+LDA campaign I match for Reynolds number never measured total drag at all
+(<code>P3_SOURCES.md</code> C11).</p>
+<p>Meile et al. 2011 measured this exact geometry at <strong>this project's exact speed
+and Reynolds number</strong>, at both gate angles: Cd = 0.299 at 25 degrees and
+Cd = 0.279 at 35 degrees, read from printed data labels on a bar chart rather
+than interpolated off a curve, with the stilt tare loads subtracted
+(<code>RESULTS\D16_RESULTS.md</code> Section 6.1, <code>P3_SOURCES.md</code> L37). My Cd includes the
+stilts by construction, so the fair comparison adds a stilt allowance to their
+numbers first: Gant's thesis gives +0.017 to +0.019 Cd from paired with-stilt
+and without-stilt runs, consistent across five turbulence models
+(<code>P3_SOURCES.md</code> L30).</p>
+<table>
+<thead>
+<tr>
+<th>Angle</th>
+<th>Meile (no stilts)</th>
+<th>Stilt-adjusted anchor</th>
+<th>My fine-mesh Cd</th>
+<th>Delta</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>25 deg</td>
+<td>0.299</td>
+<td>0.316 to 0.318</td>
+<td>0.3179</td>
+<td>+0.000 to -0.002</td>
+</tr>
+<tr>
+<td>35 deg</td>
+<td>0.279</td>
+<td>0.296 to 0.298</td>
+<td>0.2904</td>
+<td>-0.006 to -0.008</td>
+</tr>
+</tbody>
+</table>
+<p>The 25 degree row is the check I did not tune. Applying Gant's allowance to
+Meile's 25 degree number lands my own 25 degree result almost exactly on the
+corrected anchor, with no free parameters.</p>
+<p><strong>The safeguards, and why this is not moving the goalposts.</strong> D16 wrote down
+three conditions for a legitimate band revision <strong>before</strong> Meile's 35 degree
+value was read, and all three were evaluated and met
+(<code>RESULTS\D16_RESULTS.md</code> Section 6.3): the revision must be justified by source
+quality alone, independent of which way the number came out; it must be applied
+to both angles in the same pass, since Meile measured both; and the record must
+state plainly that the gate result was already known when the band changed. The
+test I would apply to anyone else is whether the argument for the new anchor
+would have been just as strong the day before the result arrived. It would: a
+primary wind-tunnel campaign at my exact speed, Reynolds number and both gate
+angles beats a value read off a chart from a different campaign at 60 m/s. The
+I ratified the revision on 2026-08-13 (<code>DECISIONS.md</code> D17).</p>
+<p><strong>Bands in force, and the verdict:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Angle</th>
+<th>Anchor</th>
+<th>Band</th>
+<th>Fine-mesh Cd</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>25 deg</td>
+<td>0.317</td>
+<td>0.287 to 0.347</td>
+<td>0.3179</td>
+<td><strong>PASS</strong></td>
+</tr>
+<tr>
+<td>35 deg</td>
+<td>0.297</td>
+<td>0.267 to 0.327</td>
+<td>0.2904</td>
+<td><strong>PASS</strong></td>
+</tr>
+</tbody>
+</table>
+<p>No measured value changed. The same 0.3179 and 0.2904 reported before D16
+opened are the numbers in this table. Only the band moved, and the superseded
+bands and anchors are preserved in <code>DECISIONS.md</code> D7, <code>BRIEF.md</code> Section 5 and
+<code>RESULTS_LOG.md</code>, not deleted.</p>
+<p>A direction check worth stating: the literature reports that RANS generally
+<strong>under</strong>-predicts drag at 35 degrees (<code>P3_SOURCES.md</code> L23), and Meile's own
+Fluent RSM run under-predicts their own experiment there by about 1 percent. I
+appeared to over-predict, which is the wrong way round for a generic RANS bias
+and was part of why I suspected the anchor rather than the setup. Against the
+stilt-bookkept, same-Reynolds anchor, my 35 degree result reads about 2 to 3
+percent <strong>low</strong>, which agrees with the community bias after all.</p>
+<h3>4.6 Wake comparison (criterion 4)</h3>
+<p>Criterion 4 was first evaluated on the coarse rung only, because the medium and
+fine cases had been carried through force extraction but their volume fields
+were gone (<code>RESULTS\criterion4_wake_comparison.md</code> Sections 1 and 4). That gap
+was closed on 2026-08-14 by taking the same cutting plane from the still
+reconstructed time = 2000 fields on the VM, without re-solving anything.</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Ux min (m/s)</th>
+<th>Reversed-flow fraction</th>
+<th>Core (x, y) m</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CFD coarse</td>
+<td>-11.33</td>
+<td>5.50%</td>
+<td>1.085, 0.096</td>
+</tr>
+<tr>
+<td>CFD medium</td>
+<td>-11.13</td>
+<td>7.42%</td>
+<td>1.112, 0.101</td>
+</tr>
+<tr>
+<td>CFD fine</td>
+<td>-11.68</td>
+<td>8.85%</td>
+<td>1.131, 0.112</td>
+</tr>
+<tr>
+<td>LDA</td>
+<td>-14.57</td>
+<td>5.78%</td>
+<td>1.112, 0.089</td>
+</tr>
+</tbody>
+</table>
+<p>All three CFD rungs and the LDA symmetry-plane cut show <strong>one</strong> dominant closed
+recirculation, so vortex count matches at the mesh the gate certifies, and core
+position is close (the medium rung lands on the LDA's x exactly). Criterion 4
+passes. Three things I will not oversell: the bubble grows with refinement and
+overshoots the LDA, so the coarse rung was accidentally closest on that one
+metric and finer is not automatically closer; the core stays weaker than the
+LDA's at every rung; and a symmetry-plane cut cannot confirm or deny the
+literature's three-dimensional C-pillar pair. Figures:
+<code>RESULTS\criterion4_ladder.png</code>, <code>RESULTS\criterion4_side_by_side.png</code>,
+<code>RESULTS\lda_wake_symmetry_plane.png</code>.</p>
+<h3>4.7 Gate verdict</h3>
+<p>All four criteria pass, and Stage 2 was authorised (<code>RESULTS_LOG.md</code> 1.F).
+Notably, the failure mode D14 pre-declared as the one I feared most, a
+massively separated wake at 25 degrees producing a backwards or flat ranking,
+did <strong>not</strong> occur.</p>
+<hr />
+<h2>5. Stage 2: the crisis hunt</h2>
+<h3>5.1 Mesh choice for the sweep</h3>
+<p>A three-rung ladder at every sweep angle was unaffordable, so the sweep runs on
+one rung. I used the <strong>medium</strong> rung, roughly 1.02 million cells, being the
+coarsest rung that sits on the converged side of both ladders
+(<code>DECISIONS.md</code> D18). The brief's original wording said "coarse-but-calibrated",
+and I did not take that as licence to use the coarse rung: its jump to medium is
+0.024 at 25 degrees and 0.021 at 35 degrees, large enough that a crisis hunt on
+that mesh would partly be a hunt for mesh error.</p>
+<h3>5.2 The sweep, and the refinement</h3>
+<p>Seven angles from 20 to 35 degrees in 2.5 degree steps, with the 25 and 35
+degree medium results reused from Stage 1 (recomputed from their stored
+post-processing rather than copied, agreeing to 0.321702 against 0.3217 and
+0.292852 against 0.2929). A later pass added 26.25 and 28.75 degrees, both
+built by cloning the 27.5 degree case and swapping only the STL, verified by
+<code>diff -r</code> returning zero differences on both the laptop and the VM and by md5
+matching each placed geometry against its source.</p>
+<table>
+<thead>
+<tr>
+<th>Angle (deg)</th>
+<th>Cells</th>
+<th>Cd</th>
+<th>p-p %</th>
+<th>Oscillating</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>20.00</td>
+<td>1,018,178</td>
+<td>0.2919</td>
+<td>2.36</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>22.50</td>
+<td>1,020,280</td>
+<td>0.3054</td>
+<td>3.16</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>25.00</td>
+<td>1,020,869</td>
+<td>0.3217</td>
+<td>5.75</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>26.25</td>
+<td>1,022,026</td>
+<td>0.3238</td>
+<td>5.02</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>27.50</td>
+<td>1,020,289</td>
+<td>0.3290</td>
+<td>5.36</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><strong>28.75</strong></td>
+<td>1,021,298</td>
+<td><strong>0.3339</strong></td>
+<td>4.63</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>30.00</td>
+<td>1,021,529</td>
+<td>0.3050</td>
+<td>0.68</td>
+<td>no</td>
+</tr>
+<tr>
+<td>32.50</td>
+<td>1,026,063</td>
+<td>0.3093</td>
+<td>4.51</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>35.00</td>
+<td>1,024,857</td>
+<td>0.2929</td>
+<td>0.64</td>
+<td>no</td>
+</tr>
+</tbody>
+</table>
+<p>Plots: <code>RESULTS\stage2_cd_vs_angle.png</code> (seven angles, left untouched) and
+<code>RESULTS\stage2_cd_vs_angle_refined.png</code> (nine angles).</p>
+<p><strong>The refinement moved the answer, and that is reported rather than folded in
+silently.</strong> The seven-angle sweep put the maximum at Cd = 0.3290 at 27.5
+degrees and classified the crisis interval as 27.5 to 30 degrees. Solving the
+1.25 degree midpoints showed that 28.75 degrees is higher still at Cd = 0.3339,
+so the rise continues through both new points and the fall starts one rung
+later than the sweep placed it. The 2.5 degree grid under-reported the peak by
+about 1.5 percent and mis-located it by 1.25 degrees. That is exactly the cost
+of the resolution limit that <code>RESULTS\STAGE2_RESULTS.md</code> Section 8 stated in
+advance, now measured rather than asserted. The superseded peak values are
+preserved in <code>RESULTS_LOG.md</code> under superseded values; they are not wrong
+measurements, they are correct measurements at angles that turned out not to
+contain the peak.</p>
+<h3>5.3 The crisis, at 28.75 to 30 degrees</h3>
+<p>The drop across 28.75 to 30 degrees is <strong>0.0290</strong>, larger than the sweep's
+0.0240 despite spanning half the angle, and it carries 71 percent of the total
+post-peak fall of 0.0410. Per degree it is 0.0232 against 0.0066 for the next
+largest step, so normalising for the now uneven grid does not rescue any
+competing interval.</p>
+<p>Against the experimental crisis at approximately 30 degrees, the offset is
+<strong>0 to 1.25 degrees early</strong>, with the interval's upper bound touching the
+experimental value. <strong>This is the Stage 2 success criterion and it is met</strong>:
+the solver puts the crisis at or just below the experimental angle, not several
+degrees early and not absent. I quote an interval and never a critical angle,
+because any single number would be an interpolation presented as a measurement.</p>
+<p>Separability, using the yardsticks pre-declared in D18 rather than new ones:
+the drop is 3.3 times the half-sum of its two bounding oscillation bands, and
+6.9 times the medium-to-fine mesh error measured at the crisis angle. Both
+ratios are better than the seven-angle sweep's 2.4 and 5.7, because the drop
+grew while the noise did not.</p>
+<p>That mesh error is itself measured rather than assumed. A fine-rung case at 30
+degrees (2,040,378 cells, Cd = 0.3008, 55 min 10 s) was run specifically
+because Stage 1 never showed that medium-to-fine convergence holds at the
+crisis angle, where the flow is changing regime and is most likely to be mesh
+sensitive. It holds: the medium-to-fine change at 30 degrees is 0.0042, against
+0.0038 at 25 degrees and 0.0025 at 35 degrees.</p>
+<h3>5.4 The second, independent signature</h3>
+<p>Solution oscillation amplitude runs 5.75, 5.02, 5.36 and 4.63 percent across
+25, 26.25, 27.5 and 28.75 degrees, a mild and noisy drift, then collapses to
+0.68 percent at 30 degrees, a factor of 6.8, <strong>in the same 1.25 degree interval
+that carries the drag drop</strong>. Neither signature was tuned to the other, and
+they agreed on the coarser grid before they agreed on the finer one. The 30
+degree steadiness also survives the doubling of cell count (0.78 percent on the
+fine rung against 0.68 on the medium), so it is a property of the flow regime
+rather than of the mesh.</p>
+<p>What the finer grid removes is the tidier reading that amplitude declines
+steadily towards the crisis. It does not: it is a cliff confined to the last
+1.25 degrees, not the end of a trend.</p>
+<h3>5.5 Three honest qualifications</h3>
+<p><strong>The classification was not re-run on the refined grid.</strong> D18 gives the
+refinement pass one job, narrowing the interval, and re-evaluating pre-declared
+thresholds against a grid they were not written for, after seeing the result,
+is the post-hoc move D18 exists to prevent. One consequence must be said
+plainly: D18's condition A1 required the maximum to sit at an angle in
+{25, 27.5, 30}, and the refined maximum sits at 28.75 degrees, outside that
+set. A1 is not thereby failed, because it was written for and passed on the 2.5
+degree sweep, but the sweep's peak angle was an artefact of the grid, and 28.75
+degrees is the number to quote from now on.</p>
+<p><strong>One ambiguity test came close to firing and the threshold was not adjusted.</strong>
+D18's C2 test fires if two non-adjacent steps both exceed 0.010 and differ by
+less than 0.005. The two qualifying drops differ by 0.0076, so C2 misses by
+0.0026. Had the second drop been 0.0190 instead of 0.0164, the sweep would have
+classified AMBIGUOUS. That margin is on the record rather than smoothed.</p>
+<p><strong>The curve is not monotonic above the peak.</strong> Cd recovers by 0.0043 from 30 to
+32.5 degrees. That does not violate A3 as written, which measures against the
+peak value, and it is in any case 3.3 times smaller than the 32.5 degree case's
+own oscillation band, so it is not separable from solution unsteadiness. It is
+reported, not explained.</p>
+<h3>5.6 The depth of the crisis, an open observation</h3>
+<p>Location is one thing and depth is another, and I have only the first. My
+peak-to-plateau fall is 0.3339 minus 0.2929, equal to <strong>0.0410</strong>. Ahmed's
+reproduced chart shows roughly 0.378 falling to 0.260, about <strong>0.118</strong>, so I
+reproduce roughly a third of that depth while getting the location right to
+within 1.25 degrees (<code>RESULTS\STAGE2_RESULTS.md</code> Section 12). A constant stilt
+offset does not explain the gap, because adding the same allowance to both
+experimental values leaves the fall unchanged.</p>
+<p>The complication is that my two experimental comparators disagree with each
+other. Meile's same-Reynolds pair spans only about 0.020 across the same two
+angles, against the chart's 0.118, a factor of nearly six. The experimental
+depth at this Reynolds number is therefore not settled in my source set, and I
+do not treat 0.0410 as validated against any single agreed experimental depth.
+Stated as an open observation, deliberately not resolved. The most likely
+physical reason for a shallow crisis in a steady RANS calculation is the known
+under-prediction of turbulence in the initial separated shear layer
+(<code>P3_SOURCES.md</code> L32), which is what a scale-resolving simulation would attack.</p>
+<hr />
+<h2>6. Stage 3: the spoiler study</h2>
+<h3>6.1 Design</h3>
+<p>I took the high-drag 25 degree body, pre-crisis with strong C-pillar vortices,
+and fitted a 2.0 mm flat strip at the roof trailing edge at three pitch angles,
+0, 5 and 15 degrees, following the geometry and pitch guidance of the source
+study (<code>P3_SOURCES.md</code> G2, G5, <code>DECISIONS.md</code> D10, D19). All thresholds, claim
+limits and the expected ordering were fixed in advance in D19.</p>
+<p>Two design choices carry the result. <strong>The baseline was re-run, not reused.</strong>
+Every spoiler case carries a level 6 refinement box at the roof trailing edge
+and the old 25 degree case does not, so reusing it would have folded "we
+refined the roof" into a number labelled "the spoiler did this". The re-run
+came out at 0.3212 against the old 0.3217, a difference of 0.0005, so the box
+by itself did essentially nothing and the paired deltas are clean. <strong>The
+acceptance check for the plate is face count, not cell count.</strong> At the medium
+surface cell size the 2 mm plate is 0.64 of one cell, and a cut-cell mesher can
+lose a feature thinner than a cell and still return a plausible "no change",
+silently. Level 6 refinement gives 0.777 mm cells, 2.57 across the plate, and
+each spoiler case had to add 30,000 to 55,000 body patch faces over the
+baseline. Each added 38,000 to 39,000. A near-baseline face count would have
+voided the case.</p>
+<p>The four cases share byte-identical <code>system/</code>, <code>0.orig</code> and <code>Allrun</code>
+directories. The only file that differs anywhere across the four case trees is
+the STL.</p>
+<h3>6.2 Results</h3>
+<table>
+<thead>
+<tr>
+<th>Configuration</th>
+<th>Cd</th>
+<th>p-p</th>
+<th>Delta vs baseline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Baseline, no spoiler</td>
+<td>0.3212</td>
+<td>6.56%</td>
+<td>(reference)</td>
+</tr>
+<tr>
+<td>Spoiler 0 deg</td>
+<td>0.2942</td>
+<td>0.69%</td>
+<td><strong>-0.0271 (-8.42%)</strong></td>
+</tr>
+<tr>
+<td>Spoiler 5 deg</td>
+<td>0.3036</td>
+<td>0.63%</td>
+<td><strong>-0.0176 (-5.48%)</strong></td>
+</tr>
+<tr>
+<td>Spoiler 15 deg</td>
+<td>0.3518</td>
+<td>0.68%</td>
+<td><strong>+0.0306 (+9.51%)</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Plot: <code>RESULTS\stage3_spoiler_delta.png</code>. The pre-declared ordering held: flat
+is best, a little pitch still helps, steep pitch actively hurts. All three
+magnitudes sit well above D19's 0.006 "measured" threshold, three to five times
+above it. All four cases passed the pre-declared stationarity detector (block
+mean spreads of 0.00001 to 0.00003 against a 0.0010 flag) and the split-window
+consistency test (both halves agreeing in sign and to within 0.00002).</p>
+<p>Layer coverage dropped 6.6 to 7.8 percentage points on every spoiler case,
+because the 2.08 mm prism stack does not fit in the wedge under a 2.0 mm plate.
+D19 required that to be reported next to the delta rather than hidden, so it is
+here.</p>
+<h3>6.3 The finding I did not predict</h3>
+<p>Every spoiler case, <strong>including the one that makes drag worse</strong>, collapsed the
+baseline's 6.56 percent oscillation band to 0.63 to 0.69 percent. D19
+pre-declared, before any Stage 3 case ran, that a collapse below about 1.5
+percent means the strip has pushed the body out of the oscillating pre-crisis
+state and the delta must be reported as a <strong>regime change</strong>, not as C-pillar
+vortex weakening. The signature fired on all three. A fine-tuning of vortices
+would not do that to a case that gets worse.</p>
+<p>The pictures say the same thing in physical terms
+(<code>RESULTS\stage3_surfaces_compare.png</code>, <code>RESULTS\stage3_cpillar_planes.png</code>).
+The baseline's roof trailing edge is a strong suction stripe at Cp near -1.2,
+and that stripe is gone on every spoiler case; slant-face mean Cp rises from
+-0.375 to about -0.22 at 0 and 5 degrees and -0.255 at 15 degrees. The
+symmetry-plane wake then grows: reversed-flow area in the first 0.30 m behind
+the base goes from 18 percent to 50, 54 and 60 percent at 0, 5 and 15 degrees.
+On the transverse cuts, the baseline's concentrated C-pillar core at
+omega_x approximately -2450 /s drops to -406, -217 and +277 /s, a six-fold to
+eleven-fold collapse or a sign flip. So the strip both kills the roof-edge
+suction and opens a separated wake, and pitch decides which effect wins.</p>
+<p>This also explains a number that would otherwise look like an error. My 8.4
+percent is roughly three times what the source study reports, and the reason is
+not that my strip works three times better. The source ran a 35 degree body,
+already past the crisis, so it had little regime change left to buy. My 25
+degree body had all of it. Comparing the two magnitudes directly is not
+meaningful, and the 0 degree Cd of 0.2942 sitting right on Stage 2's
+post-crisis values of 0.3050 and 0.2929 is the qualitative corroboration.</p>
+<h3>6.4 The fuel estimate, with its ranges and caveats</h3>
+<p>Power to overcome drag is <code>P = 0.5 * rho * v^3 * Cd * A</code>, evaluated at 120 km/h
+with rho = 1.225 kg/m^3, then divided by an assumed fuel-to-wheels efficiency
+of 25 percent, the midpoint of the EPA highway range of 22 to 30 percent
+(<code>P3_SOURCES.md</code> H4). For the best case, delta-Cd = -0.02706:</p>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Power saved</td>
+<td>68.7 W</td>
+</tr>
+<tr>
+<td>Fuel power equivalent at eta = 0.25</td>
+<td>275 W</td>
+</tr>
+<tr>
+<td>Energy per 100 km</td>
+<td><strong>0.825 MJ</strong>, range <strong>0.69 to 0.94</strong> across the efficiency band</td>
+</tr>
+<tr>
+<td>Litres per 100 km, Ahmed area 0.112 m^2</td>
+<td><strong>0.0255 to 0.0264 L</strong></td>
+</tr>
+<tr>
+<td>Car-scale illustration at 2.23 m^2, eta = 0.25</td>
+<td>0.51 to 0.53 L, range <strong>0.42 to 0.60</strong> across the efficiency band</td>
+</tr>
+</tbody>
+</table>
+<p><strong>A provenance disclosure I volunteer rather than wait to be asked about.</strong> D19
+originally <strong>blocked</strong> the litres figure until a sourced fuel energy-density row
+existed, and blocked the car-scale figure until a sourced frontal-area row
+existed. Both rows (<code>P3_SOURCES.md</code> H5, H6) were added on 2026-08-14, after the
+results were known, during a handover between work sessions. I ratified keeping both
+figures on 2026-08-16 knowing that ordering (<code>DECISIONS.md</code> D19, ratification
+note). That is weaker provenance than a row that existed before the result, and
+the printed caveats are the reason the figures are still defensible. This is
+the one place in the project where a pre-declared boundary was released after
+the fact, and it is disclosed here rather than left for a reader to discover.</p>
+<p><strong>What these numbers are not.</strong> They are the aerodynamic term only, at one
+speed, steady, straight, in still air. They are not a drive-cycle consumption
+and must not be compared against a published sticker figure. No percentage fuel
+saving is quoted anywhere, because a percentage needs a total fuel consumption
+I do not have; the -8.42 percent is a drag percentage and is labelled as one.
+The car-scale row assumes the same delta-Cd transfers to a real car, and
+nothing in this project demonstrates that: it is an area scale, not a vehicle
+validation.</p>
+<hr />
+<h2>7. What I would do next</h2>
+<p>In the order I would spend the compute, each item attacking a named weakness
+rather than making an existing answer prettier.</p>
+<ol>
+<li><strong>A fine-grid study of the crisis depth.</strong> My crisis is in the right place
+   and roughly a third as deep as one of my two disagreeing experimental
+   comparators. Fine rungs at 28.75 and 32.5 degrees would test whether the peak
+   location survives refinement (it is currently assumed from a measurement 1.25
+   degrees away), and would attack the 32.5 degree recovery, which is still
+   unexplained.</li>
+<li><strong>A DDES or hybrid RANS-LES comparison at 25 and 35 degrees.</strong> This is the
+   largest single upgrade available. It attacks the one bias I could not
+   eliminate, the steady-RANS turbulence deficit in the initial separated shear
+   layer (<code>P3_SOURCES.md</code> L32); it would let me say something about the unsteady
+   wake for the first time; and it is the most likely candidate to deepen the
+   shallow crisis above.</li>
+<li><strong>Drop the symmetry plane.</strong> A full model at the same resolution would let me
+   claim the C-pillar pair as two solved vortices rather than one plus a mirror,
+   and would open bistability and yaw, both currently forbidden by the half-model
+   decision.</li>
+<li><strong>A paired level 7 spoiler pass</strong>, the escalation D19 already specified and
+   costed, so the plate's own boundary layer and trailing edge are resolved
+   rather than just its two faces.</li>
+<li><strong>A proper pitch sweep</strong>, five or six angles between 0 and 15 degrees, so the
+   sign flip can be located instead of bracketed.</li>
+</ol>
+<p>What I would <strong>not</strong> spend it on is more iterations. The mean is stable to
+0.00009 while the solution orbit is 0.0185 wide, so doubling the iteration count
+would shrink an uncertainty component already worth about 0.0001 and move no
+digit anyone reads.</p>
+<p>One literature item, not a compute item, is the highest-value thing left on the
+validation: a sourced stilt-drag number measured at 35 degrees specifically,
+which would close the extrapolation named in Section 8.</p>
+<hr />
+<h2>8. Limitations</h2>
+<p>Stated in full, without hedging, because every one of them constrains a claim
+made above.</p>
+<p><strong>Single-source validation anchor.</strong> Both current pass bands trace to one
+paper, Meile et al. 2011. The superseded anchor at least had two independent
+secondary reproductions of the underlying 1984 data. If Meile's measurement or
+their stilt-tare methodology carries an unflagged error, both gate angles
+inherit it together.</p>
+<p><strong>Stilt allowance transferred across angles.</strong> Gant's +0.017 to +0.019 Cd was
+derived from paired runs at <strong>25 degrees only</strong>. Carrying it to 35 degrees is a
+physically reasoned extrapolation (the stilts sit in the constant-section
+mid-body, well clear of the slant, so their drag should not depend strongly on
+slant angle), graded MEDIUM confidence, not HIGH. It is not a second
+measurement. The one free check on it, applying the same allowance to Meile's
+25 degree number and landing on my own 25 degree result with no tuned
+parameters, shows the method is not obviously broken but does not prove the
+transfer.</p>
+<p><strong>Steady RANS on a flow that limit-cycles.</strong> The solver never converges in the
+strict sense; it enters a stationary limit cycle, which is documented behaviour
+for this class of flow. I characterised it rather than assumed it away: the
+orbit is a fixed-amplitude cycle, not a drift, and the 400-iteration mean
+averages about 16 complete cycles. But a trailing mean of a steady solver's
+orbit is not a time average of the physical flow, and the two must never be
+presented as the same thing. No claim about wake unsteadiness, vortex
+switching, bistability or yaw appears anywhere in this report, and none is
+available from this method.</p>
+<p><strong>Crisis depth under-predicted.</strong> My peak-to-plateau fall of 0.0410 is roughly
+a third of the 0.118 read from Ahmed's reproduced chart, while my two
+experimental comparators disagree with each other by nearly a factor of six on
+what that depth should be. Location is a validated-adjacent claim. Depth is not
+a claim I have made or can make.</p>
+<p><strong>y+ range and a bookkeeping miss.</strong> <code>nutkWallFunction</code> is valid for
+30 &lt;= y+ &lt;= 300, and the one measured distribution I have on record reads min
+2.75, max 211, mean 30.3 on the body. The maximum is fine. The minimum is not:
+a first cell at y+ around 3 sits below the buffer layer, where the log-law the
+wall function assumes does not hold. Three qualifications, all of them mine to
+own. That measurement comes from a 100-iteration benchmark on the coarse rung,
+not from a converged production run, so it is indicative rather than certified
+for the rungs the gate rests on. D14 promised the measured y+ range would be
+logged for every rung and <strong>that logging was not done</strong>, which is a process
+miss in my own project, recorded in <code>RESULTS_LOG.md</code> 1.G rather than backfilled
+with numbers invented after the fact (the raw <code>yPlus.dat</code> files are on disk, so
+anyone can recompute it). And a low-y+ tail is expected wherever local skin
+friction is low, that is, in separated regions where the log-law was never
+going to hold anyway. Two things limit the damage: published submissions to
+this benchmark ran wall functions across y+ 11 to 550, and I tested wall
+treatment directly rather than arguing about it (D16 R4 moved Cd by 0.0005,
+R5 by 0.0050 in the wrong direction).</p>
+<p><strong>Strict-mode mesh check failures.</strong> Run with <code>-allGeometry -allTopology</code>,
+<code>checkMesh</code> reports four failures on every case: concave cells, cells with a
+small determinant, faces with interpolation weight below 0.05, and faces with
+volume ratio below 0.01. The standard non-orthogonality, skewness and aspect
+ratio checks all pass. These are layer-addition artefacts concentrated where
+the prism layers meet the surface refinement, which is the normal
+snappyHexMesh outcome. What makes them harmless to the <strong>comparisons</strong>, and
+only to the comparisons, is that every case in the project reports the
+identical set of four with mesh quality metrics agreeing to five decimal places
+across case sets built on different days, so the poor cells contribute the same
+error to both sides of every difference I claim. They are still poor cells,
+they sit near the wall where the physics is decided, and a project with more
+compute would fix them rather than document them.</p>
+<p><strong>Mesh resolution below the published norm.</strong> My fine rung is 2.04 million
+cells against published validations at 3.7 to 16.6 million, and my coarse rung
+sits about 3 percent below ERCOFTAC's stated floor for a wall-function
+half-body. A converged ladder proves the answer stopped moving under controlled
+refinement; it does not prove the answer is right. This bites hardest on
+absolute Cd, and least on the crisis location and the spoiler delta, where a
+systematic offset of consistent sign largely cancels in a difference.</p>
+<p><strong>Stage 3 absolute Cd is not comparable with Stages 1 or 2.</strong> All four Stage 3
+meshes carry the level 6 refinement box; none of the earlier meshes do. Stage 3
+claims a difference and only a difference. The one comparison drawn across that
+boundary, the 0 degree case sitting near the post-crisis sweep values, is
+explicitly qualitative.</p>
+<p><strong>Half-model consequences.</strong> One C-pillar vortex is computed and the other is an
+enforced mirror, drawn dashed and labelled as such in the figure. I do not claim
+a solved pair.</p>
+<p><strong>Fuel figures are model-scale only, and one boundary was released after the
+fact.</strong> The defensible figures are the model-scale ones at 0.112 m^2. The
+car-scale row is a labelled illustration built on a MEDIUM-confidence frontal
+area, and both the litres conversion and the car-scale row rest on source rows
+added after the results were known and ratified afterwards (Section 6.4).</p>
+<p><strong>Three angles is not a pitch sweep.</strong> I can say the sign of the spoiler's
+effect flips somewhere between 5 and 15 degrees of pitch, and nothing finer.</p>
+<hr />
+<h2>9. Decision and data trail</h2>
+<p>Every decision in this project, including the ones that were later reversed, is
+preserved in <code>DECISIONS.md</code> as D1 through D19, each with its plain-language
+reasoning, its sources, an explicit "what this makes invisible or wrong"
+section, and, where relevant, its pre-declared thresholds and its outcome
+filled in afterwards. Every number that entered any document has a row in
+<code>P3_SOURCES.md</code> with its provenance and a confidence grade, and rows that could
+not be sourced are listed as honest gaps rather than quietly dropped. Every
+value that was reported once and later replaced sits in <code>RESULTS_LOG.md</code> under
+superseded values, with the reason and a pointer to where the current number
+lives: the original validation bands anchored to a 60 m/s experiment, the
+sweep's peak of Cd 0.3290 at 27.5 degrees, the crisis interval of 27.5 to 30
+degrees, and a withdrawn claim that cell counts rose monotonically with angle.
+The superseded commercial-solver phase is preserved the same way, in
+<code>DECISIONS.md</code> D1 and D9 and in the marked passages of <code>BRIEF.md</code>, as the record
+of a real decision that was reversed rather than an error to erase. Deviations
+between what the plan said and what was executed are logged in <code>RESULTS_LOG.md</code>
+with their reasons, including one case where a pre-declared verification check
+came back dirty and was resolved by direct experiment rather than argued away.</p>
+<p><strong>Prediction scorecard, summarised.</strong> Predictions were written before the runs
+that tested them, and the refutations are the part worth reading.</p>
+<table>
+<thead>
+<tr>
+<th>Prediction, written in advance</th>
+<th>Outcome</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Crisis near 30 degrees, not several degrees early</td>
+<td><strong>Held.</strong> Interval 28.75 to 30</td>
+</tr>
+<tr>
+<td 25_="25," 27.5_="27.5," 30="30">Peak Cd at an angle in</td>
+<td><strong>Broken by the finer grid.</strong> Peak at 28.75 degrees, outside the set. Classification deliberately not re-run</td>
+</tr>
+<tr>
+<td>20 and 22.5 degrees oscillate at least as hard as 25</td>
+<td><strong>Refuted.</strong> 2.36 and 3.16 percent against 5.75</td>
+</tr>
+<tr>
+<td>Lower free-stream eddy viscosity raises Cd (D16 R1)</td>
+<td><strong>Refuted in direction.</strong> Cd fell 0.0009</td>
+</tr>
+<tr>
+<td>Refining the near-wall stack lowers Cd (D16 R5)</td>
+<td><strong>Refuted in direction.</strong> Cd rose 0.0050</td>
+</tr>
+<tr>
+<td>Realizable k-epsilon lowers Cd by 0.005 to 0.025 (D16 R6)</td>
+<td><strong>Falsified outright.</strong> Cd rose 0.0079 and the solution destabilised to 23.95 percent</td>
+</tr>
+<tr>
+<td>Enlarging the domain lowers Cd by 0.003 to 0.009 (D16 R3)</td>
+<td><strong>Held</strong>, the only run inside its pre-declaration, and still not adopted because it broke the other angle</td>
+</tr>
+<tr>
+<td>Spoiler at 0 degrees, about -0.010</td>
+<td>Direction right, <strong>magnitude 2.7 times larger</strong> at -0.0271</td>
+</tr>
+<tr>
+<td>Spoiler at 5 degrees, 0 to -0.010 and probably unresolvable</td>
+<td><strong>Refuted</strong> in magnitude and in resolvability. Measured -0.0176, clearly resolved</td>
+</tr>
+<tr>
+<td>Spoiler at 15 degrees, about +0.035</td>
+<td>Close. Measured +0.0306</td>
+</tr>
+<tr>
+<td>Ordering: 0 best, then 5, then 15 worst</td>
+<td><strong>Held</strong></td>
+</tr>
+<tr>
+<td>The refinement box alone moves Cd by less than 0.010</td>
+<td><strong>Held.</strong> 0.0005</td>
+</tr>
+</tbody>
+</table>
+<p>Three of seven D16 runs met their pre-declared expectation. That ratio is what
+an honest pre-registration looks like when it is not written after the fact, and
+it is the reason I am willing to stand behind the predictions that did hold.</p>
+<hr />
+<h2>Figure index</h2>
+<table>
+<thead>
+<tr>
+<th>Figure</th>
+<th>Path</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Wake ladder against the LDA reference</td>
+<td><code>RESULTS\criterion4_ladder.png</code></td>
+</tr>
+<tr>
+<td>Coarse CFD and LDA side by side</td>
+<td><code>RESULTS\criterion4_side_by_side.png</code></td>
+</tr>
+<tr>
+<td>LDA field replotted in project axes</td>
+<td><code>RESULTS\lda_wake_symmetry_plane.png</code></td>
+</tr>
+<tr>
+<td>Cd versus slant angle, seven angles</td>
+<td><code>RESULTS\stage2_cd_vs_angle.png</code></td>
+</tr>
+<tr>
+<td>Cd versus slant angle, refined nine angles</td>
+<td><code>RESULTS\stage2_cd_vs_angle_refined.png</code></td>
+</tr>
+<tr>
+<td>Spoiler Cd by configuration</td>
+<td><code>RESULTS\stage3_spoiler_delta.png</code></td>
+</tr>
+<tr>
+<td>Body Cp and symmetry-plane velocity, four cases</td>
+<td><code>RESULTS\stage3_surfaces_compare.png</code></td>
+</tr>
+<tr>
+<td>C-pillar vortex on transverse planes</td>
+<td><code>RESULTS\stage3_cpillar_planes.png</code></td>
+</tr>
+</tbody>
+</table>
+<h2>Document index</h2>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Contents</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BRIEF.md</code></td>
+<td>Scope, physics, pre-declared success criteria, risk register</td>
+</tr>
+<tr>
+<td><code>DECISIONS.md</code></td>
+<td>D1 to D19, every decision with reasoning, thresholds and outcomes</td>
+</tr>
+<tr>
+<td><code>P3_SOURCES.md</code></td>
+<td>Every number's provenance and confidence grade</td>
+</tr>
+<tr>
+<td><code>RESULTS_LOG.md</code></td>
+<td>Running results log, deviations, superseded values</td>
+</tr>
+<tr>
+<td><code>RESULTS\gate_check_20260812_ibmvm.md</code></td>
+<td>Automated Stage 1 gate evaluation</td>
+</tr>
+<tr>
+<td><code>RESULTS\D16_RESULTS.md</code></td>
+<td>The eight-case investigation and the Meile reading</td>
+</tr>
+<tr>
+<td><code>RESULTS\STAGE2_RESULTS.md</code></td>
+<td>The sweep, the refinement pass, the crisis-depth observation</td>
+</tr>
+<tr>
+<td><code>RESULTS\STAGE3_RESULTS.md</code></td>
+<td>The spoiler study, the fuel chain, claim limits</td>
+</tr>
+<tr>
+<td><code>RESULTS\criterion4_wake_comparison.md</code></td>
+<td>Wake topology against the LDA reference</td>
+</tr>
+<tr>
+<td><code>P3_DEFENSE_BRIEF.md</code></td>
+<td>Viva preparation, question by question</td>
+</tr>
+</tbody>
+</table>
+    <p class="report-source">Report text as written for the project; figures are on the project summary page.</p>
+  </article>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <dl class="tblock">
+      <div><dt>Drawn by</dt><dd>Usman Bashir</dd></div>
+      <div><dt>Contact</dt><dd><a href="mailto:usman.bashir1933@gmail.com">usman.bashir1933@gmail.com</a></dd></div>
+      <div><dt>Checked</dt><dd>Every number traces to the project report</dd></div>
+    </dl>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

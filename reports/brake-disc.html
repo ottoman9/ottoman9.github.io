@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ventilated Brake Disc: Transient Thermal Load, Thermal Stress and Coning | Technical report | Usman Bashir</title>
+<meta name="description" content="Full technical report: Ventilated Brake Disc: Transient Thermal Load, Thermal Stress and Coning.">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body class="report-page">
+
+<header class="site">
+  <div class="bar">
+    <div class="wrap nav-row">
+      <a class="brand" href="../index.html">Usman Bashir</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">Menu</button>
+      <nav class="primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#publication">Publication</a>
+        <a href="../index.html#tools">Tools</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </div>
+  <div class="legend" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+</header>
+
+<main>
+  <div class="wrap report-bar">
+    <a class="crumb" href="../projects/brake-disc.html">Back to the project summary</a>
+    <button class="btn quiet print-btn" type="button" onclick="window.print()">Print or save as PDF</button>
+  </div>
+  <article class="report">
+<h1>Ventilated Brake Disc: Transient Thermal Load, Thermal Stress and Coning</h1>
+<p><strong>Author:</strong> Usman Bashir, BSc Metallurgical and Materials Engineering
+<strong>Date:</strong> 2026-09-27 (build 2026-08-04, audit remediation 2026-08-04, band-width sweep and corrections 2026-08-10)
+<strong>Solver:</strong> Abaqus/Standard, sequentially coupled thermal-stress, 1/42 cyclic sector, 4 cores</p>
+<p><em>Internal working records cited in this report (for example DECISIONS, RESULTS_LOG and the sources ledger) are available on request.</em></p>
+<p>Style: no em dash or en dash as sentence punctuation.</p>
+<hr />
+<h2>0. Executive summary</h2>
+<p><em>Self-contained. Every number here is carried from <code>RESULTS_LOG.md</code> Section D or <code>DECISIONS.md</code>. Sections A to C of the results log are superseded on the numbers and are not quoted.</em></p>
+<p>A hard stop turns the car's kinetic energy into heat in a thin skin at the rubbing faces of the front discs. The skin gets far hotter than the bulk of the disc, and because the hot friction ring is joined to a cold hat on one side only, the ring bends into a shallow cone. This study models one hard stop on a named, sourced part, the <strong>VW Golf R Mk7 front rotor (340 x 30 mm, OE 5Q0615301G, 10.6 kg), in EN-GJL-250 grey iron</strong>, at two severities: 100 km/h and 160 km/h, both at 0.9 g, followed by a 90 s cooldown.</p>
+<p><strong>The results.</strong></p>
+<ol>
+<li><strong>Peak surface temperature.</strong> <strong>128.1 °C at 100 km/h</strong> (a 103.1 K rise) and <strong>241.7 °C at 160 km/h</strong> (a 216.7 K rise), at r = 156 to 158 mm, just over halfway through the stop. The 100 km/h rise sits inside Limpert's published single-stop band of 80 to 120 K. Both results sit above the lumped bulk floor and above the semi-infinite limit, which is the ordering a finite 7.5 mm cheek must produce.</li>
+<li><strong>Validation.</strong> The conduction scheme matches the closed-form erfc solution to 0.13 percent over 7.2 s. The production mesh matches it to within 5 percent inside its stated validity window and diverges afterwards in the direction and at the time predicted before the run. The thermal mesh is converged to 0.12 percent. The applied power is verified independently from the input deck to 0.01 percent. The energy balance closes to 0.46 and 0.86 percent, all of it convective loss.</li>
+<li><strong>Stress.</strong> The disc is not strength-critical in the friction ring: the far-field ring stress at 160 km/h is <strong>128 MPa max principal, about half of the 250 MPa minimum UTS</strong>, and it is insensitive to the mounting boundary condition (2.6 percent). The hat fillet is the critical feature, and its stress is set almost entirely by <strong>how the bolted joint is modelled</strong>. Across the physically plausible clamp-band widths the fillet carries <strong>99 to 179 MPa</strong> elastic at 160 km/h, with the production 12 mm band at <strong>107 MPa</strong>. The fully clamped flange, kept as a stiff upper bound, drives the fillet to 373 MPa elastic, and nonlinear grey-iron plasticity redistributes it to 238 MPa.</li>
+<li><strong>Ductility margin.</strong> Quoted as plastic strain, because the plasticity card caps tensile stress at R_m by construction. At 160 km/h the hat region uses <strong>3.3 percent of the available plastic strain under the production boundary condition and 44.5 percent under the stiff bound</strong>, and it shakes down under both. <strong>At 100 km/h under the production boundary condition the whole disc stays elastic: zero yielded elements.</strong></li>
+<li><strong>Coning.</strong> The rim moves outboard by <strong>79 µm at 100 km/h and 201 µm at 160 km/h</strong> under the production boundary condition (101 and 255 µm under the stiff bound, so the joint restraint is worth 21 percent). The 160 km/h value lies inside the published 0.17 to 0.38 mm band for vented rotors. The profile is a dished cone, not a straight one: the local slope steepens by 1.5 to 1.9 times from the ring bore to the rim.</li>
+</ol>
+<p><strong>What the model is licensed to say.</strong> One stop, on a cyclic-symmetric sector with a prescribed, circumferentially smeared flux. It cannot show hot spots, hot banding or thermoelastic instability, and it cannot say anything near the bolt holes, which are not modelled. The bolted joint is bracketed by two boundary conditions, not solved as contact. Section 9 carries the full licence.</p>
+<p><strong>What an independent audit changed.</strong> An adversarial review found the arithmetic clean but four inputs biased low. It also found that the flange boundary condition had never been varied. Fixing the inputs raised every temperature rise by about 35 percent. Varying the boundary condition removed what had been the project's headline finding: a hat fillet at 124 percent of minimum UTS was substantially an artefact of clamping the whole flange. Four claims were retracted or weakened. Section 8 reports them as failures rather than editing them out.</p>
+<hr />
+<h2>1. The problem</h2>
+<p>Braking converts kinetic energy to heat at the pad-disc interface, with local flux <code>q'' = mu p v</code>. Early in a stop the heat is confined to a skin a few millimetres deep, so the surface runs several times hotter than the bulk. The disc then carries two coupled problems: a transient conduction problem that sets the temperature field, and a thermal-stress problem driven by that field. Two mechanical outcomes matter:</p>
+<ul>
+<li><strong>Stress at the hat-to-ring connection.</strong> The ring expands and the hat restrains it. Grey iron is brittle and tension-critical, so the measure is max principal stress (and, once it yields, plastic strain) against its minimum UTS of 250 MPa, not Mises.</li>
+<li><strong>Coning.</strong> The ring is attached to the hat through one cheek only, so thermal expansion tilts the friction faces. Coning changes the pad contact pattern, which is the start of the hot-banding feedback loop.</li>
+</ul>
+<p><strong>Why sequential coupling is legitimate.</strong> Temperature drives stress, but stress does not meaningfully drive temperature once the flux is prescribed. Elastic dissipation is negligible against frictional heating. A fully coupled contact model would be needed only to let the hot spots emerge, and that is outside this study's scope by design (Section 9).</p>
+<h2>2. Model</h2>
+<h3>2.1 Vehicle and stop</h3>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Value</th>
+<th>Basis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Vehicle mass</td>
+<td>1500 kg, <strong>1560 kg effective</strong></td>
+<td>EU kerb plus driver; +4 percent rotating inertia (wheels, rotors, driveline), applied to KE only</td>
+</tr>
+<tr>
+<td>Deceleration</td>
+<td>0.9 g = 8.829 m/s²</td>
+<td>measured Golf R capability is about 1.05 g (Edmunds 70-0 mph in 156 ft)</td>
+</tr>
+<tr>
+<td>Front axle energy share</td>
+<td><strong>0.75</strong></td>
+<td>top of the sourced 0.70-0.75 band; an ideal share at 0.9 g is 0.79</td>
+</tr>
+<tr>
+<td>Heat partition into the disc, beta</td>
+<td><strong>0.95</strong></td>
+<td>bracketed by this project's own derivations: 0.872 (effusivity, equal contact areas) to 0.969 (area-corrected)</td>
+</tr>
+<tr>
+<td>Friction coefficient</td>
+<td>0.40</td>
+<td>sets pad pressure only (1.12 MPa); disc temperature is set by energy and duration</td>
+</tr>
+<tr>
+<td>Ambient</td>
+<td>25 °C</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>100 km/h</th>
+<th>160 km/h</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Stop time</td>
+<td>3.146 s</td>
+<td>5.034 s</td>
+</tr>
+<tr>
+<td>Kinetic energy</td>
+<td>601.85 kJ</td>
+<td>1540.74 kJ</td>
+</tr>
+<tr>
+<td>Heat into one front disc</td>
+<td><strong>214.41 kJ</strong></td>
+<td><strong>548.89 kJ</strong></td>
+</tr>
+<tr>
+<td>Peak smeared flux q0 (t = 0)</td>
+<td>1.217 MW/m²</td>
+<td>1.948 MW/m²</td>
+</tr>
+<tr>
+<td>Local flux at the outer band edge</td>
+<td>1.485 MW/m²</td>
+<td>2.376 MW/m²</td>
+</tr>
+</tbody>
+</table>
+<p>The flux cross-checks from <code>mu p v</code> independently: 5165 N braking force per front wheel at 27.78 m/s gives 136.3 kW into one disc after beta, which is 1.217 MW/m² over the swept area. This agrees with q0 to three figures.</p>
+<h3>2.2 Geometry</h3>
+<p>Golf R Mk7 front rotor, OE part 5Q0615301G. OD 340 mm, ring 30 mm, overall height 49.7 mm, centring bore 65 mm and PCD 5 x 112 are sourced (<code>GOLFR_SPECS.md</code>). The cheek/gap split, the vane count and the hat wall and flange thicknesses were not published. They were <strong>calibrated jointly to the 10.6 kg OEM mass</strong> with the vane count held inside an assumed 36-48 band. The result is 7.5/15/7.5 mm cheeks and gap, 42 straight radial vanes 6 mm thick, and an 8 mm hat wall and flange. The meshed mass is 10.603 kg (+0.02 percent), and 10.617 kg with the 4 mm hat fillet added.</p>
+<p>The calibrated cheeks are thinner than an OE-typical 9.5 mm cheek, because a prismatic model has none of a real casting's weight relief. The consequence is stated rather than hidden: total heat capacity (which sets bulk temperature) is right to 0.03 percent, while the model's surface heats through sooner (full-cheek penetration at 1.01 s rather than about 1.8 s).</p>
+<p>The hat-wall-to-flange corner carries an <strong>R = 4 mm fillet</strong>. The first build left it sharp, and Section 5.1 shows why that could not stand.</p>
+<h3>2.3 Material</h3>
+<p>EN-GJL-250 grey lamellar iron, pinned by Kesavan et al. (Proc. IMechE Part D, 2025) as a brake-disc grade. It is OEM-typical, <strong>not a confirmed VW specification</strong>. Conductivity, specific heat, modulus and expansion are temperature-dependent. Density (7200 kg/m³) and Poisson's ratio (0.26) are constant.</p>
+<table>
+<thead>
+<tr>
+<th>T (°C)</th>
+<th>k (W/mK)</th>
+<th>c (J/kgK)</th>
+<th>E (GPa)</th>
+<th>alpha, secant from 20 °C (1e-6/K)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>20</td>
+<td>48.0</td>
+<td>480.0</td>
+<td>110</td>
+<td>12.00</td>
+</tr>
+<tr>
+<td>200</td>
+<td>44.3</td>
+<td>537.4</td>
+<td>105</td>
+<td>13.14</td>
+</tr>
+<tr>
+<td>400</td>
+<td>38.8</td>
+<td>589.6</td>
+<td>95</td>
+<td>14.29 (extrapolated beyond the cited room-temperature band)</td>
+</tr>
+</tbody>
+</table>
+<p>The temperature dependence barely moves the peak surface temperature. That temperature scales with <code>q / sqrt(k rho c)</code>, and the fall in k and the rise in c cancel to 0.3 percent in the effusivity between 20 and 400 °C. It does move the bulk rise (about 6 percent through c) and coning (about 19 percent, linear in alpha). Those two outputs are the reason for including it.</p>
+<p>For the nonlinear stress runs the material uses <code>*CAST IRON PLASTICITY</code> (Hjelm), with tension hardening to R_m = 250 MPa at 0.5 percent total strain, giving 0.273 percent plastic strain at fracture. A brittle-end card (R_m at 0.3 percent, 0.073 percent plastic) is run as a sensitivity check.</p>
+<h3>2.4 Thermal load and cooling</h3>
+<ul>
+<li><strong>Flux:</strong> a linear decay in time (constant deceleration), <code>q''(r,t) = q0 (r / 137.689 mm)(1 - t/t_stop)</code>. The flux is <strong>proportional to radius</strong>, because sliding speed is, and it is normalised so that total power is unchanged. The local weight runs from 0.741 at r = 102 mm to 1.220 at r = 168 mm. It is applied to both friction faces over the swept band r = 102 to 168 mm and smeared circumferentially over the full annulus.</li>
+<li><strong>Convection:</strong> friction faces H_FRIC = 45 W/m²K and vane passages H_VANE = 30 W/m²K, both from correlations (<code>DECISIONS.md</code> Q5). Hat, rim and other surfaces use H_OTHER = 15, and the still-air floor is H_FLOOR = 8 W/m²K. Those last two are stated assumptions, not derivations (Section 9). The coefficients scale with speed to the power 0.8 (1.456 times at 160 km/h) and fall with the car's speed during the stop.</li>
+<li><strong>Cooldown:</strong> 90 s after the stop.</li>
+</ul>
+<h3>2.5 Discretisation and boundary conditions</h3>
+<ul>
+<li><strong>Domain:</strong> a 1/42 cyclic sector (8.5714°, one vane pitch), with the vane split across both cut planes so each cut plane is a vane mid-plane. The domain is exactly periodic for an axisymmetric load. The smeared flux makes the load axisymmetric, which is what licenses the sector.</li>
+<li><strong>Elements:</strong> DC3D8 for heat transfer and C3D8I for stress on the identical mesh, so the temperature field imports node for node. C3D8I was chosen because coning is a bending response through a 7.5 mm cheek, which C3D8R represents poorly.</li>
+<li><strong>Mesh:</strong> production L2 has 2 mm in-plane, a 0.5 mm first layer at the friction face and 6 373 elements per sector. The convergence ladder is L1 (3 mm, 1.0 mm) and L3 (1.4 mm, 0.25 mm).</li>
+<li><strong>Mechanical boundary condition, production ("patch"):</strong> axial restraint on the bolt-circle washer band only (r = 50 to 62 mm), with the rest of the flange face free. Five discrete bolt pads cannot exist in a 1/42 sector, so this is their axisymmetric equivalent. <strong>Stiff bound ("full clamp"):</strong> the whole flange underside restrained axially. The two runs differ by one <code>*Boundary</code> card on a bit-identical mesh.</li>
+</ul>
+<h3>2.6 Jobs</h3>
+<p>The current campaign ran 18 solves, all <code>COMPLETED SUCCESSFULLY</code>, in about 32 minutes of solver wall clock on 4 cores:</p>
+<ul>
+<li>4 production thermal jobs, 3 thermal convergence jobs and 2 erfc companions;</li>
+<li>4 elastic stress jobs (both severities, both boundary conditions) and 5 nonlinear jobs;</li>
+<li>4 further elastic runs on 2026-08-10 for the band-width sweep.</li>
+</ul>
+<h2>3. Validation</h2>
+<p>Every check had its band written down before the run.</p>
+<h3>3.1 Build checks</h3>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Target</th>
+<th>Model</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Swept flux area per sector</td>
+<td>2.665866e-3 m² analytic</td>
+<td>2.665866e-3 m² summed from faces</td>
+<td>exact</td>
+</tr>
+<tr>
+<td>Whole-disc mass</td>
+<td>10.6 kg OEM</td>
+<td>10.603 kg</td>
+<td>+0.02 %</td>
+</tr>
+<tr>
+<td>Friction-ring mass</td>
+<td>8.318 kg analytic</td>
+<td>8.317 kg from the ODB</td>
+<td>-0.01 %</td>
+</tr>
+<tr>
+<td>Applied power, r-weighted flux, re-integrated face by face from the <code>.inp</code></td>
+<td>0 %</td>
+<td>-0.0115 %</td>
+<td>pass</td>
+</tr>
+</tbody>
+</table>
+<p>The flux check is necessary because the old <code>q0 x A</code> identity no longer verifies a non-uniform load. <code>p1_fluxcheck.py</code> recovers each face's area from its own corner nodes and re-integrates the flux, knowing nothing about how the load card was written.</p>
+<h3>3.2 Thermal mesh convergence (100 km/h)</h3>
+<table>
+<thead>
+<tr>
+<th>Mesh</th>
+<th>Elements</th>
+<th>Peak surface T</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>L1</td>
+<td>2 040</td>
+<td>127.82 °C</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>L2 (production)</strong></td>
+<td><strong>6 373</strong></td>
+<td><strong>128.06 °C</strong></td>
+<td>+0.19 %</td>
+</tr>
+<tr>
+<td>L3</td>
+<td>20 484</td>
+<td>128.21 °C</td>
+<td>+0.12 %</td>
+</tr>
+</tbody>
+</table>
+<p>The gate was 2 percent. The peak time is identical to the increment on all three meshes.</p>
+<h3>3.3 Closed-form erfc validation</h3>
+<p>The companion cases use a constant, uniform flux, no convection and frozen properties, which are the closed form's own assumptions. They keep the uniform flux deliberately, because putting a radial profile into them would break the comparison.</p>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>What it tests</th>
+<th>In-window error</th>
+<th>Later</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>P1_ERFC_BAR</code>, 1D column, 40 mm deep</td>
+<td>the time-integration scheme, valid to 7.20 s</td>
+<td>-2.40 % at 0.10 s</td>
+<td><strong>-0.13 %</strong> at 7.20 s</td>
+</tr>
+<tr>
+<td><code>P1_ERFC_DISC</code>, production mesh</td>
+<td>the mesh, valid while sqrt(4 alpha t) &lt; half the cheek, t &lt; 0.253 s</td>
+<td>-4.41 % at 0.11 s</td>
+<td>+6.08 % at t_stop</td>
+</tr>
+</tbody>
+</table>
+<p>The disc case tracks the closed form within 5 percent through its validity window. It crosses over just past t = 1.01 s, when the thermal penetration depth reaches the full 7.5 mm cheek, and then runs hot, because a finite cheek that has heated through must run hotter than a semi-infinite body. The direction and the crossover time were both predicted before the run. The error pattern also stayed the same when the load rose 21 percent in the audit pass (-4.96 to -4.41 in-window, +6.07 to +6.08 at t_stop), which is what a linear conduction problem must do.</p>
+<h3>3.4 Energy balance</h3>
+<p>The stored internal energy is computed from the temperature field and rho c alone, so it is independent of the load definition.</p>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Applied (J/sector)</th>
+<th>Stored (J/sector)</th>
+<th>Residual</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>P1_ERFC_DISC</code> (no convection, the strict check)</td>
+<td>10 209.99</td>
+<td>10 209.25</td>
+<td><strong>+0.01 %</strong></td>
+</tr>
+<tr>
+<td>100 km/h production</td>
+<td>5 104.99</td>
+<td>5 081.38</td>
+<td>+0.46 % (convective loss)</td>
+</tr>
+<tr>
+<td>160 km/h production</td>
+<td>13 068.78</td>
+<td>12 956.85</td>
+<td>+0.86 % (convective loss)</td>
+</tr>
+</tbody>
+</table>
+<h3>3.5 Bracket check: the answer must sit between two bounds it cannot cross</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Bulk floor, ring only</th>
+<th>Semi-infinite at the local flux of the peak radius</th>
+<th><strong>Model rise</strong></th>
+<th>Excess over semi-infinite</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100 km/h</td>
+<td>50.5 K</td>
+<td>102.4 K</td>
+<td><strong>103.1 K</strong></td>
+<td>+0.7 %</td>
+</tr>
+<tr>
+<td>160 km/h</td>
+<td>129.4 K</td>
+<td>204.5 K</td>
+<td><strong>216.7 K</strong></td>
+<td>+5.9 %</td>
+</tr>
+</tbody>
+</table>
+<p>Both results sit above both bounds. The excess over the semi-infinite value grows with stop length, which is the finite cheek heating through.</p>
+<h3>3.6 Literature and flash temperature</h3>
+<ul>
+<li><strong>Limpert, single stop 100 to 0 km/h: 80 to 120 K rise.</strong> The model gives 103.1 K, inside the band. Before the audit it gave 75 K, below the band, and that shortfall was the clearest sign that the old inputs were biased low.</li>
+<li><strong>Vented-rotor coning, 0.17 to 0.38 mm (published predictions).</strong> At 160 km/h the model gives 0.20 mm (production) and 0.26 mm (stiff bound), inside the band. The 100 km/h value is below it, consistent with a milder event.</li>
+<li><strong>Flash temperature (Blok/Archard, Pe = 424):</strong> about 464 K, as an order-of-magnitude bound only. It is a contact-scale quantity that a smeared-flux model cannot reproduce by construction, so it is not a pass/fail gate.</li>
+</ul>
+<h2>4. Thermal results</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>100 km/h</th>
+<th>160 km/h</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Peak surface temperature</strong></td>
+<td><strong>128.06 °C</strong> at 1.730 s</td>
+<td><strong>241.66 °C</strong> at 2.995 s</td>
+</tr>
+<tr>
+<td>Rise</td>
+<td>103.06 K</td>
+<td>216.66 K</td>
+</tr>
+<tr>
+<td>Peak time as a fraction of the stop</td>
+<td>55 %</td>
+<td>59 %</td>
+</tr>
+<tr>
+<td>Peak radius</td>
+<td>158 mm</td>
+<td>156 mm</td>
+</tr>
+<tr>
+<td>Ring volume-average rise</td>
+<td>51.8 K</td>
+<td>128.3 K</td>
+</tr>
+</tbody>
+</table>
+<p>The peak arrives just past mid-stop, when conduction into the cheek starts to outrun the falling flux. It sits outboard of the band centre for two reasons in this order: the flux is proportional to radius, and the rim has only 2 mm of unswept iron outboard to conduct into, against the whole unswept ring and hat inboard.</p>
+<p>The circumferential smearing of the flux suppresses a surface ripple of about 15 to 30 K confined to the top 0.9 mm (<code>DECISIONS.md</code> Q3). The physical peak at 160 km/h is therefore about 255 to 270 °C.</p>
+<p><strong>What this means for the brief's 200 to 400 °C expectation.</strong> A single stop from 100 km/h does not reach 200 °C. A single stop from 160 km/h reaches the bottom of the band. The top of the band needs repeated stops or a sustained descent.</p>
+<h2>5. Stress</h2>
+<h3>5.1 The hat fillet: why the first answer could not stand</h3>
+<p>The first build left the hat-wall-to-flange corner sharp. It reported 251 MPa there, and that number was not conservative. A sharp re-entrant corner has no converged elastic stress: refining it moved the stress 17.7 percent. With an R = 4 mm fillet, halving the element size across the arc (6 to 12 elements) moved the peak only <strong>1.2 percent</strong>, while the friction-ring control stayed flat to 0.6 percent across a 3 to 6 mm radius sweep. The fillet stress scales roughly as R^-0.29. These convergence tests were run on the pre-audit load with the flange fully clamped. They establish the method, and the absolute values they produced are superseded below.</p>
+<h3>5.2 The boundary condition dominates everything else at that corner</h3>
+<p>At the corner, the mesh moved the stress 1.1 percent, local fillet refinement 1.2 percent, doubling the fillet radius 18 percent and the constitutive model 29 percent. <strong>The flange boundary condition moves it 59 percent.</strong> Before the audit it had never been varied.</p>
+<p>160 km/h, elastic, max principal:</p>
+<table>
+<thead>
+<tr>
+<th>Location</th>
+<th>Full clamp (stiff bound)</th>
+<th>Patch, 12 mm band (production)</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hat fillet itself (element 6315, fillet arc)</td>
+<td><strong>372.81 MPa</strong></td>
+<td><strong>107.13 MPa</strong></td>
+<td>-71 %</td>
+</tr>
+<tr>
+<td>Governing point in the r &lt; 100 mm region under the patch BC (element 506, inboard cheek at the hat wall, un-filleted)</td>
+<td></td>
+<td>151.00 MPa</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Far-field control, element 4008, r = 137 mm, vane mid-height</strong></td>
+<td>131.86 MPa</td>
+<td>128.40 MPa</td>
+<td><strong>-2.6 %</strong></td>
+</tr>
+<tr>
+<td>Coning</td>
+<td>-255.17 µm</td>
+<td>-200.95 µm</td>
+<td>-21 %</td>
+</tr>
+<tr>
+<td>Rim free radial growth</td>
+<td>383.43 µm</td>
+<td>384.93 µm</td>
+<td>+0.4 %</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The far-field row is the control.</strong> It is the same element in both runs and it moves 2.6 percent, so the collapse at the fillet is a real, local response to the restraint. The rim's radial growth is unaffected, which confirms that the flange restraint acts on the bending mode and not on radial expansion.</p>
+<p><strong>A correction made on 2026-08-10.</strong> The 151 MPa figure was originally published as the "hat fillet, patch BC" stress. Checking element location, not just the number, showed that it is a different feature: a thermally driven point on the inboard cheek near the hat wall. It is essentially insensitive to the clamp (151.5 to 148.5 MPa across an 8 to 34 mm band). The fillet's own stress under the production BC is <strong>107.13 MPa</strong>. The 151 MPa point is un-filleted, and so is a second local maximum at the ring bore (153 MPa). Neither is a converged stress. They are quoted only to show that the region is comfortably below UTS however it is read.</p>
+<h3>5.3 Band-width sweep: where the production choice sits</h3>
+<p>The washer-band width itself was swept on 2026-08-10, with 160 km/h, elastic, one <code>*Boundary</code> card changed per run:</p>
+<table>
+<thead>
+<tr>
+<th>Band width</th>
+<th>8 mm</th>
+<th><strong>12 mm (production)</strong></th>
+<th>22 mm</th>
+<th>34 mm</th>
+<th>47 mm</th>
+<th>full clamp</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fillet peak (MPa)</td>
+<td>99.14</td>
+<td><strong>107.13</strong></td>
+<td>117.87</td>
+<td>146.20</td>
+<td>178.66</td>
+<td>372.81</td>
+</tr>
+<tr>
+<td>Ring control (MPa)</td>
+<td>128.33</td>
+<td>128.40</td>
+<td>128.48</td>
+<td>128.70</td>
+<td>128.95</td>
+<td>131.86</td>
+</tr>
+<tr>
+<td>Coning (µm)</td>
+<td>-199.96</td>
+<td>-200.95</td>
+<td>-202.28</td>
+<td>-205.79</td>
+<td>-209.81</td>
+<td>-255.17</td>
+</tr>
+</tbody>
+</table>
+<p>The fillet stress is monotonic with band width. Across the physically plausible range (8 to 47 mm; at 47 mm the band is already pinned against the centring bore) it spans <strong>99 to 179 MPa</strong>, which is 40 to 71 percent of minimum UTS. The production choice sits near the <strong>compliant, low end</strong> of that range, not neutrally in the middle, and that is stated here rather than left implied. Narrowing the band has little room to reduce the stress. Widening it has a great deal of room to raise it.</p>
+<h3>5.4 Nonlinear closure and the ductility margin</h3>
+<p><code>*CAST IRON PLASTICITY</code> yields on max principal stress in tension, and its hardening curve tops out at R_m = 250 MPa. It <strong>cannot report a tensile stress above 250 MPa and has no fracture criterion</strong>, so "the stress came out below R_m" is partly guaranteed by the card. An earlier brittle-end run on the stiff bound reported exactly 250.00 MPa, the cap to five figures, which is the tell. The margin is therefore quoted <strong>primarily as plastic strain against available ductility</strong>, a genuine model output that the card does not bound.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>100 km/h full clamp</th>
+<th><strong>100 km/h patch</strong></th>
+<th>160 km/h full clamp</th>
+<th><strong>160 km/h patch</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Elastic peak, hat region (MPa)</td>
+<td>155.03</td>
+<td>66.83</td>
+<td>372.81</td>
+<td>151.00</td>
+</tr>
+<tr>
+<td>Nonlinear peak, hat region (MPa)</td>
+<td>141.39</td>
+<td><strong>66.83</strong></td>
+<td>238.04</td>
+<td>137.15</td>
+</tr>
+<tr>
+<td>Peak PEEQ</td>
+<td>9.00e-5</td>
+<td><strong>0</strong></td>
+<td>1.214e-3</td>
+<td>9.15e-5</td>
+</tr>
+<tr>
+<td><strong>Share of available plastic strain (0.273 %)</strong></td>
+<td>3.3 %</td>
+<td><strong>0 %</strong></td>
+<td><strong>44.5 %</strong></td>
+<td><strong>3.3 %</strong></td>
+</tr>
+<tr>
+<td>Yielded elements (of 6 373)</td>
+<td>40</td>
+<td><strong>0</strong></td>
+<td>269</td>
+<td>227</td>
+</tr>
+<tr>
+<td>Plastic strain added by an identical second stop</td>
+<td>0.00 %</td>
+<td></td>
+<td>0.00 %</td>
+<td>0.08 %</td>
+</tr>
+</tbody>
+</table>
+<p>The key readings:</p>
+<ul>
+<li><strong>A hard 100 km/h stop on a correctly restrained rotor is entirely elastic.</strong> Zero yielded elements and zero plastic strain, with the elastic and nonlinear solutions identical to five figures.</li>
+<li><strong>At 160 km/h the hat region uses between 3 and 45 percent of the available ductility.</strong> The geometry, mesh and material are fixed, so that entire range is the boundary condition.</li>
+<li><strong>Under the stiff bound the plastic zone hugs the fillet arc</strong> (peak 0.086 mm below the surface) and locks in -135.5 MPa of residual compression after unload. <strong>Under the production BC it has left the fillet entirely</strong> and sits at the hat-wall-to-cheek corner, with PEEQ thirteen times smaller.</li>
+<li><strong>Brittle-end ductility card, 160 km/h, production BC:</strong> the stress rises to 145.9 MPa and PEEQ falls, using 4.5 percent of the (smaller) plastic capacity. The ductility question, which looked decisive in the pre-audit build (62 percent), no longer governs.</li>
+<li><strong>Shakedown.</strong> Both boundary conditions shake down, but a structure that has just shaken down sits on the shakedown boundary by definition. Under the stiff bound, elastic peak minus residual is 237.3 MPa against a current yield of 238.0 MPa, a 0.3 percent "margin". That is not a safety factor, and quoting it as one was an error in the earlier build. The correct statement is that the corner shakes down at this load level per the model, and that any load increase (a 170 km/h stop, cyclic softening) would move it.</li>
+</ul>
+<p>No geometry change was needed. The escalation path, which was to thicken the hat within the 10.6 kg budget if the corner exceeded minimum UTS, was never triggered.</p>
+<h2>6. Coning</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>100 km/h</th>
+<th>160 km/h</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Production BC (patch)</strong></td>
+<td><strong>-79.1 µm</strong></td>
+<td><strong>-201.0 µm</strong></td>
+</tr>
+<tr>
+<td>Stiff bound (full clamp)</td>
+<td>-101.2 µm</td>
+<td>-255.2 µm</td>
+</tr>
+<tr>
+<td>After 90 s cooldown, production BC</td>
+<td>-39.4 µm</td>
+<td>-105.2 µm</td>
+</tr>
+</tbody>
+</table>
+<p>Coning is measured as the axial displacement difference between r = 170 mm (rim) and r = 100 mm (ring bore), over 36 stations.</p>
+<ul>
+<li><strong>Magnitude.</strong> A bimetallic-strip estimate from the measured ring-average rise gives about 63 µm at 100 km/h, bracketing the FE value by order of magnitude. The flange restraint is worth 21 percent at both severities.</li>
+<li><strong>Timing.</strong> Coning plateaus through the end of the stop: it changes by only 0.13 percent across the output frames either side of t_stop. The output grid cannot resolve the instant of the peak, and no claim is made about it. What survives is that <strong>coning keeps growing while the surface temperature is already falling</strong>, because it tracks the through-thickness gradient and not the temperature.</li>
+<li><strong>Shape.</strong> The fit to a straight cone has R² = 0.9994, but the residual is systematic. The local slope steepens by 1.85 times (100 km/h) and 1.48 times (160 km/h, stiff bound) from bore to rim, and by 1.71 times at 160 km/h under the production BC. It is a <strong>dished cone</strong>.</li>
+<li><strong>Direction.</strong> The rim moves toward the hat. On the car the hat flange is the outboard-most surface of the rotor, because it is clamped between the hub and the wheel. <strong>The rim therefore moves outboard</strong>, in agreement with the literature. The model's axis labels are a mirror image of the installed part, which changes no number. The durable mechanism is that <strong>the sign is set by which cheek the neck attaches to</strong>. Moving the neck to the other cheek would reverse it.</li>
+<li><strong>Cooldown relaxation</strong> is about 50 percent over 90 s. The still-air coefficient used is probably low (Section 9), so the real disc relaxes faster than this.</li>
+</ul>
+<h2>7. Figures</h2>
+<p>All figures are in <code>figures\</code> and were regenerated on the corrected load. Pre-audit versions are archived in <code>figures\_preaudit_20260804\</code>.</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>What it shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>geo01_sector_iso.png</code>, <code>geo02_full_disc.png</code>, <code>geo03_full_disc_hat.png</code>, <code>geo04_section.png</code>, <code>geo05_fillet_closeup.png</code></td>
+<td>the sector, the full disc patterned from it, the section and the R = 4 mm hat fillet</td>
+</tr>
+<tr>
+<td><code>fig01_mesh_convergence.png</code></td>
+<td>peak surface T on L1, L2 and L3</td>
+</tr>
+<tr>
+<td><code>fig02_T_history_base_vs_160.png</code></td>
+<td>peak surface temperature history, 100 against 160 km/h</td>
+</tr>
+<tr>
+<td><code>fig03_erfc_validation.png</code></td>
+<td>FE against the closed-form erfc solution, bar and disc</td>
+</tr>
+<tr>
+<td><code>fig04_coning_profile.png</code></td>
+<td>axial displacement against radius; the dished-cone measurement and the mirror-image correction are annotated</td>
+</tr>
+<tr>
+<td><code>fig05_contour_T_base_face.png</code>, <code>fig05_contour_T_base_section.png</code></td>
+<td>temperature at the 100 km/h peak, face and section</td>
+</tr>
+<tr>
+<td><code>fig06_contour_T_160_face.png</code>, <code>fig06_contour_T_160_section.png</code></td>
+<td>the same at 160 km/h</td>
+</tr>
+<tr>
+<td><code>fig07_contour_Smaxprin_160.png</code></td>
+<td>max principal stress at 160 km/h, <strong>stiff bound (full clamp)</strong></td>
+</tr>
+<tr>
+<td><code>fig12_contour_Smaxprin_160_patchBC.png</code></td>
+<td>the same field under the <strong>production BC</strong>. Side by side with fig07, this pair is the whole boundary-condition argument: same mesh, same load, one card</td>
+</tr>
+<tr>
+<td><code>fig08_fillet_sensitivity.png</code></td>
+<td>the fillet radius and mesh sweeps (method result, pre-audit load)</td>
+</tr>
+<tr>
+<td><code>fig09_nonlinear_closure.png</code></td>
+<td>elastic against nonlinear response at the critical corner</td>
+</tr>
+<tr>
+<td><code>fig10_contour_PEEQ_160_fullBC.png</code>, <code>fig10_contour_PEEQ_160_patchBC.png</code></td>
+<td>plastic zone under each BC; under the production BC it has left the fillet</td>
+</tr>
+<tr>
+<td><code>fig11_contour_Sresidual_160_fullBC.png</code>, <code>fig11_contour_Sresidual_160_patchBC.png</code></td>
+<td>residual stress after unload, strong under the stiff bound and weak under the production BC</td>
+</tr>
+</tbody>
+</table>
+<h2>8. Predictions that failed and claims that were retracted</h2>
+<p>This project's first version was confident about several things that turned out wrong. They are reported here, not deleted.</p>
+<ol>
+<li><strong>The inputs were biased low, and the first numbers were too cool.</strong> Before the audit the energy chain used 1500 kg with no rotating inertia, a 0.70 front share and beta = 0.872. The flux was also uniform in radius. Together these lowered the energy by 21 percent and the local peak flux by a further 11 to 13 percent. The 100 km/h rise was 75 K, below the published band. Every input was re-derived, and the rise is now 103 K, inside it.</li>
+<li><strong>The headline stress finding was a boundary-condition artefact.</strong> The first versions reported the hat fillet at 309 MPa, 124 percent of minimum UTS, and built a nonlinear rescue on it. That number came from clamping the whole flange: a rigid ground plane 8 mm below the fillet. Under a restraint the real part can produce, the fillet carries 107 MPa.</li>
+<li><strong>The 151 MPa "fillet" number was not the fillet.</strong> It was mislabelled for six days. The correction (Section 5.2) was found by checking element locations, not values.</li>
+<li><strong>The 200 to 400 °C push-back was weakened.</strong> The project argued that a single road-speed stop could not reach the brief's band. With the biased inputs removed, 160 km/h reaches its bottom edge. Only the weaker claim survives: 100 km/h does not reach 200 °C.</li>
+<li><strong>"Forward prediction validated the coning mechanism" was retracted.</strong> The mechanism came from this model's own earlier generic-disc run with the same neck-to-cheek topology. Reproducing it on the Golf R geometry is repeatability with no independent information, not validation.</li>
+<li><strong>"Coning peaks after the stop ends" was deleted.</strong> The output grid cannot resolve the peak time (Section 6).</li>
+<li><strong>"A clean straight line, a true cone" was corrected</strong> to a dished cone (Section 6).</li>
+<li><strong>The coning direction was once framed as contradicting the literature.</strong> That conflict came from the model's own axis labels. The physics agreed with the literature all along. One seam remains open: the literature paraphrase this project used assigns the hat's restraint to the other cheek, which is not consistent with its own conclusion by the same bimetallic logic. The primary sources have not been read closely enough to settle it, so two routes reaching the same direction is weaker evidence than one.</li>
+</ol>
+<p>All 18 audit findings, with their dispositions (fixed, accepted or rebutted), are in <code>RESULTS_LOG.md</code> Section D.8. An independent re-check on 2026-08-10 found that 15 of the 16 "fixed" claims had landed. The one that had not (D8, a conduction-path length still wrong in two documents) was then fixed.</p>
+<h2>9. Licence and limitations</h2>
+<p><strong>What the model is licensed to say:</strong> peak and bulk temperatures, the coning magnitude and mechanism, and friction-ring stresses for a single hard stop on this rotor class, with the joint bracketed by two boundary conditions. <strong>What it is not licensed to say:</strong></p>
+<ol>
+<li><strong>No hot spots, hot banding or thermoelastic instability.</strong> The cyclic sector and the prescribed, circumferentially smeared flux exclude them by construction. Sequential coupling is the deliberate choice.</li>
+<li><strong>Uniform pad pressure.</strong> The flux now varies correctly with radius, but only because uniform pressure makes it proportional to sliding speed. The real plus or minus 30 to 50 percent pressure distribution is not represented.</li>
+<li><strong>Circumferential smearing</strong> suppresses a 15 to 30 K surface ripple in the top 0.9 mm.</li>
+<li><strong>Heat partition</strong> is constant at 0.95, which carries a plus or minus 11 percent band on every temperature rise from the 0.872 to 0.969 bracket. Pad saturation over repeated stops is not modelled.</li>
+<li><strong>The flange-to-hub joint is a boundary condition, not contact.</strong> The two BCs bracket it, and the band-width sweep maps the space between them. Discrete bolt pads, bolt preload, bolt holes, hub compliance and unilateral contact (free to lift, not to penetrate) are all absent. Bolt holes break the sector periodicity, so <strong>nothing near the bolt circle is quotable</strong>.</li>
+<li><strong>Swept band 66 mm wide against a sourced 69.5 mm pad height.</strong> This -5.1 percent flux-area error biases temperature about 2.5 percent <strong>high</strong>, the one conservatism left running opposite to the rest. It was not corrected so that the results stay comparable across the campaign. (An earlier reason, that it would disturb the mass calibration, was false and has been struck: the flux band and the ring geometry are separate constants.) Three ring inner radii are in use (98 to 102 mm inferred, 102 mm flux band, 100 mm geometry and post-processing filter). They are consistent in the code and are stated here so they are not confused.</li>
+<li><strong>Plasticity card:</strong> tensile stress is capped at R_m, with no fracture criterion, so the margin is quoted as plastic strain (Section 5.4).</li>
+<li><strong>Material grade</strong> is OEM-typical and sourced, not a confirmed VW specification. The 400 °C expansion value is extrapolated.</li>
+<li><strong>Inferred geometry:</strong> the swept-band inner radius, the vane count and the cheek/gap split are inferred or mass-calibrated, not measured.</li>
+<li><strong>Vane roots are un-filleted re-entrant corners.</strong> They do not govern (the ring peak is at vane mid-height), but that is an observation, not a convergence study.</li>
+<li><strong>Two convection coefficients are assumptions.</strong> H_OTHER = 15 and H_FLOOR = 8 W/m²K have no derivation. A hand estimate from radiation (emissivity 0.8) plus natural convection gives a still-air floor of 12 to 20 W/m²K, so the 90 s cooldown removes heat roughly 1.5 to 2.5 times too slowly, and every cooldown-stage number inherits that. The peak temperatures are unaffected, because convection removes under 2 percent of a stop's energy. The 0.8 speed exponent is right for the vane passages; the friction-face correlation implies nearer 0.5.</li>
+<li><strong>One stop.</strong> No fade sequence, no thermal fatigue life. The shakedown result is a single-cycle statement, not a fatigue assessment.</li>
+</ol>
+<h2>10. What I would do next</h2>
+<ol>
+<li><strong>Model the joint as contact:</strong> a full 360° or 72° (one bolt pitch) model with bolt preload and a unilateral hub contact. That replaces the bracket in Section 5 with one answer. It is the largest open uncertainty in the project.</li>
+<li><strong>A repeated-stop sequence</strong> (for example, several 160 km/h stops or an alpine descent) to reach the upper half of the 200 to 400 °C band and give the thermal-fatigue question real loading.</li>
+<li><strong>Thermomechanical fatigue</strong> on the cycle from step 2, using the Kesavan et al. EN-GJL-250 strain-controlled TMF data that already pins the grade.</li>
+<li><strong>Fully coupled pad contact</strong> on a full-disc model, to let the pressure distribution and hot banding emerge rather than be assumed.</li>
+<li><strong>Derive the two unsourced convection coefficients</strong> and re-run the cooldown, which would firm up the relaxation figures.</li>
+<li><strong>Measure the geometry</strong> (cheek thickness, vane count, pad footprint) from a real rotor to retire the mass calibration.</li>
+</ol>
+    <p class="report-source">Report text as written for the project; figures are on the project summary page.</p>
+  </article>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <dl class="tblock">
+      <div><dt>Drawn by</dt><dd>Usman Bashir</dd></div>
+      <div><dt>Contact</dt><dd><a href="mailto:usman.bashir1933@gmail.com">usman.bashir1933@gmail.com</a></dd></div>
+      <div><dt>Checked</dt><dd>Every number traces to the project report</dd></div>
+    </dl>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Composite Fuselage Skin Bay: Buckling, First-Ply Failure and Postbuckling Collapse | Technical report | Usman Bashir</title>
+<meta name="description" content="Full technical report: Composite Fuselage Skin Bay: Buckling, First-Ply Failure and Postbuckling Collapse.">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body class="report-page">
+
+<header class="site">
+  <div class="bar">
+    <div class="wrap nav-row">
+      <a class="brand" href="../index.html">Usman Bashir</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">Menu</button>
+      <nav class="primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#publication">Publication</a>
+        <a href="../index.html#tools">Tools</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </div>
+  <div class="legend" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+</header>
+
+<main>
+  <div class="wrap report-bar">
+    <a class="crumb" href="../projects/composite-panel.html">Back to the project summary</a>
+    <button class="btn quiet print-btn" type="button" onclick="window.print()">Print or save as PDF</button>
+  </div>
+  <article class="report">
+<h1>Composite Fuselage Skin Bay: Buckling, First-Ply Failure and Postbuckling Collapse</h1>
+<p><strong>Author:</strong> Usman Bashir, BSc Metallurgical and Materials Engineering
+<strong>Date:</strong> 2026-09-15 (audit revision 2026-09-16)
+<strong>Solver:</strong> Abaqus/Standard 2024, S4 shells, 4 cores</p>
+<p><em>Internal working records cited in this report (for example DECISIONS, RESULTS_LOG and the sources ledger) are available on request.</em></p>
+<p>Style: no em dash or en dash as sentence punctuation.</p>
+<hr />
+<h2>0. Executive summary</h2>
+<p><em>Self-contained. Every statement here is carried from a numbered section or from <code>RESULTS_LOG.md</code>.</em></p>
+<p>A narrow-body fuselage is a stiffened shell. Between two frames and two stringers the skin is a thin rectangular plate, in compression on the crown under fuselage bending and in in-plane shear under torsion. A 2 mm carbon-epoxy skin bay does not fail by strength first. It <strong>buckles at a mean stress of about 30 MPa</strong> while its compressive first-ply-failure strength is fifteen times higher, and it then carries load in the postbuckled state until the material damages in the edge strips and the capacity collapses. This study quantifies the three numbers that describe the bay, on a class-typical geometry, with a real validation chain and a stated licence.</p>
+<p>The bay is 508 by 178 by 2.0 mm of IM7/8552, sixteen plies, four layups, simply supported, under unit compression and pure shear.</p>
+<p><strong>The four results.</strong></p>
+<ol>
+<li><strong>Buckling.</strong> Ncr for the quasi-isotropic baseline is <strong>60.1 N/mm</strong> at the S4 production mesh, 61.3 by Ritz, 63.0 by the closed form. The closed form silently assumes D16 = D26 = 0; a real quasi-isotropic layup has D16/D11 = 0.11, and the bend-twist coupling costs 2.7 percent. The S4 shell sits a further 2.0 percent below the Kirchhoff (closed-form and Ritz) value because of <strong>transverse shear flexibility</strong>, which was isolated by a rigid-shear diagnostic and quantified. Clamped is 108.1 N/mm, so a real stringer-frame restrained bay lies between 60 and 108 N/mm.</li>
+<li><strong>First-ply failure.</strong> 903 N/mm by Hashin and 909 by Tsai-Wu, validated against Abaqus to 0.00 percent in every ply. <strong>FPF over Ncr is 14.7</strong>, so the bay is buckling-critical by an order of magnitude, which is why postbuckling matters.</li>
+<li><strong>Postbuckling collapse.</strong> <strong>230 N/mm = 3.83 Ncr</strong> at 2.9 mm end shortening, with the centre deflected 7.8 mm (3.9 thicknesses). The collapse is <strong>imperfection-insensitive (0.17 percent across a 10x amplitude range)</strong> and <strong>fracture-energy-insensitive (0.03 percent when the two memory-sourced energies are halved)</strong>, and mesh-checked to 232.3 and 232.9 N/mm on the coarse and fine meshes.</li>
+<li><strong>The mechanism.</strong> The damage localises at two diagonally opposite corners of the straight edge strips, not at the buckle crests, which is the effective-width picture made visible, and the collapse agrees with von Karman's estimate sqrt(Ncr Nfpf) = 233 N/mm to 1.3 percent.</li>
+</ol>
+<p><strong>What the model is licensed to say.</strong> A skin-bay class, not an aircraft. The collapse corner is an idealised simply supported corner, not a fastened stringer-frame clip; there is no delamination, no in-situ strength, no environment and no combined compression plus shear. The collapse load is a model result for the idealised bay, and the licence is repeated wherever the number appears, Section 7.</p>
+<p><strong>One prediction failed and is reported as a failure.</strong> The coupled-layup buckling band of 1.5 percent was missed by 2.0 to 2.5 percent. The mechanism (transverse shear, which the reference excluded by construction) was found and quantified rather than the band being widened, Section 3.3.</p>
+<hr />
+<h2>1. The problem</h2>
+<p>Under fuselage bending the crown skin is compressed along the fuselage axis; under torsion the same bay sees in-plane shear. The design question is not "when does the material fail" but "when does the plate lose its flat shape and what reserve remains after it does". Metallic fuselages routinely buckle below limit load and carry load in the postbuckled state; composite skins increasingly do the same, and the reserve is only usable if it is quantified.</p>
+<p>Three quantities describe the bay. Ncr, an eigenvalue of the plate bending stiffness against the in-plane load, closed form only for a specially orthotropic plate. Nfpf, from classical lamination theory membrane stresses against a ply criterion. And Ncoll, from a geometrically nonlinear analysis with progressive damage. The gap between Ncr and Ncoll is the postbuckling reserve.</p>
+<h2>2. Model</h2>
+<p><strong>Geometry.</strong> 508 mm frame pitch, 178 mm stringer pitch, 2.0 mm skin, class-typical round numbers (<code>P6_SOURCES</code> G1), no specific aircraft claimed.</p>
+<p><strong>Material.</strong> IM7/8552 unidirectional ply, the Camanho card: E1 171.4 GPa, E2 9.08, G12 5.29, nu12 0.32, XT 2326, XC 1200, YT 62.3, YC 200, SL 92.3 MPa, 0.125 mm plies. Hashin initiation, energy-based linear softening, viscous regularisation 1e-4. The four fracture energies are G_ft 81.5, G_fc 106.3, G_mt 0.2774, G_mc 0.7879 N/mm; two of them are memory-sourced and flagged (<code>P6_SOURCES</code> M5), which is why their sensitivity is tested rather than assumed.</p>
+<p><strong>Layups.</strong> All 16 plies, symmetric and balanced. QI <code>[45/0/-45/90]2s</code> (25/50/25), HARD (50/0/50), SOFT (12.5/75/12.5), cross-ply XP (50/0/50).</p>
+<p><strong>Boundary conditions.</strong> Simply supported on four edges (w = 0, rotations free) as the primary case, which is what the closed form and Ritz model and the pessimistic assumption for a real bay. Loaded edges held straight (uniform end shortening through a reference-node equation), unloaded edges free in-plane. Clamped on four edges as the stiff bound. Reasons in <code>DECISIONS.md</code> D2.</p>
+<p><strong>Mesh.</strong> S4 fully integrated shells, ladder 25.4, 12.7, 6.35, 3.175 mm; production L3 (2,240 elements). S4R was rejected because its hourglass control contaminates coarse-mesh eigenvalues and full integration costs nothing here.</p>
+<p><strong>Nonlinear run.</strong> Mode-1 imperfection at 5 percent of thickness (0.10 mm) baseline, with 1 and 10 percent as the sweep; prescribed end shortening to 5 mm; nonlinear geometry; Hashin initiation with energy evolution; automatic stabilisation reduced 2000 times from the Abaqus default after the default was shown to delay the bifurcation (<code>RESULTS_LOG</code> C.1).</p>
+<h2>3. Validation</h2>
+<p>Five checks, bands written before the runs.</p>
+<h3>3.1 V1 and V2, buckling against closed form and Ritz</h3>
+<table>
+<thead>
+<tr>
+<th>Layup</th>
+<th>FE Ncr (S4 L3)</th>
+<th>Ritz 12x12</th>
+<th>Closed form</th>
+<th>FE vs Ritz</th>
+<th>Band</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>QI</td>
+<td>60.108</td>
+<td>61.325</td>
+<td>63.041</td>
+<td>-1.98 %</td>
+<td>1.5 % FAIL</td>
+</tr>
+<tr>
+<td>HARD</td>
+<td>56.013</td>
+<td>57.113</td>
+<td>59.131</td>
+<td>-1.93 %</td>
+<td>1.5 % FAIL</td>
+</tr>
+<tr>
+<td>SOFT</td>
+<td>66.626</td>
+<td>68.355</td>
+<td>69.086</td>
+<td>-2.53 %</td>
+<td>1.5 % FAIL</td>
+</tr>
+<tr>
+<td>XP</td>
+<td>44.019</td>
+<td>44.120</td>
+<td>44.120</td>
+<td>-0.23 %</td>
+<td>1.0 % PASS</td>
+</tr>
+</tbody>
+</table>
+<p>The Ritz code is verified against the closed form on the cross-ply (D16 = D26 = 0), where the two agree to 0.00 percent at every series size. Mode shapes and the layup ordering (XP lowest, SOFT highest) match prediction. The counter-intuitive result is worth stating: the cross-ply has the highest axial modulus and the lowest buckling load, because at aspect ratio 2.85 the buckling load is dominated by the twisting term D12 + 2 D66, which the +-45 plies feed and the 0 and 90 plies starve. Membrane stiffness and bending stability are different properties.</p>
+<h3>3.2 V4, mesh convergence</h3>
+<p>L1 to L4: 62.339, 60.674, 60.108, 59.921 N/mm, monotonic decreasing, observed order 1.6, Richardson limit 59.83. L3 is 0.31 percent above L4, inside the 0.5 percent band.</p>
+<h3>3.3 The coupled-layup miss, decomposed</h3>
+<p>The 2 percent gap on QI, HARD and SOFT is not a model fault. Two diagnostics settled it before anything was written up. The Ritz series was pushed to 40x40 (<code>P6_RITZ_CONVERGE.json</code>), which puts the converged limit at 61.19, so truncation accounts for 0.2 percent of the 2.0. And the FE re-run with transverse shear stiffness set rigid gave 61.320, which reproduces the converged Kirchhoff reference to <strong>+0.2 percent</strong>, the L3 mesh residual. Against the unconverged 12x12 Ritz the rigid-shear FE reads -0.01 percent, but that single comparison is partly fortuitous: the Ritz truncation error and the mesh residual are both about 0.2 percent and cancel there. The whole gap is <strong>transverse shear flexibility of the Mindlin shell</strong>, 2.0 percent on QI and 0.4 percent on XP at b/h = 89, which the Kirchhoff references exclude by construction. The band was written against a Kirchhoff reference without allowing for this and stays recorded as a failed band. The S4 value is the more physical one and is what is reported.</p>
+<h3>3.4 V3, first-ply failure against CLT</h3>
+<p>A membrane-only run at unit Nx = -1 N/mm. The reaction sum on the loaded edge is 178.000 N against 178.000 applied and the laminate section force SF1 is -1.00000 uniformly. Abaqus's Hashin fibre-compression index in the 0 degree plies equals the hand CLT value to 0.00 percent (1.2261e-6, Nfpf = 903.1 N/mm), and 1/TSAIW equals the hand Tsai-Wu load factor to 0.000 percent in every ply. The check did real work: it caught two input errors that would have silently corrupted the Tsai-Wu numbers, the order of the <code>*FAIL STRESS</code> entries and Abaqus reporting TSAIW as the reciprocal strength ratio rather than the polynomial.</p>
+<h3>3.5 V5, shear buckling, both signs</h3>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>FE first mode</th>
+<th>Ritz</th>
+<th>Deviation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>QI, +Nxy</td>
+<td>66.586</td>
+<td>67.151</td>
+<td>-0.84 %</td>
+</tr>
+<tr>
+<td>QI, -Nxy</td>
+<td>94.131</td>
+<td>95.073</td>
+<td>-0.99 %</td>
+</tr>
+<tr>
+<td>XP</td>
+<td>68.520</td>
+<td>68.438</td>
+<td>+0.12 %</td>
+</tr>
+</tbody>
+</table>
+<p>The QI sign asymmetry, 41 percent, is reproduced. The FE and Ritz sign conventions are exactly opposite; this was originally asserted and is now <strong>proven by mode-shape correlation</strong> (script <code>p6_shear_sign.py</code>): each FE first mode matches the opposite-labelled Ritz mode at correlation 1.000. In the Abaqus tensile-positive convention the QI layup buckles first at 66.6 N/mm under +Nxy and 94.1 under -Nxy. On the cross-ply both signs give 68.5. The mechanism is that D16 and D26 make the plate stiffer against twist in one diagonal than the other, so which diagonal is compressed decides the load. Nonlinear verification: the pre-buckling stiffness is 253.4 N/mm per mm against CLT 254.0, and the stabilisation energy stays under 0.4 percent of strain energy per increment (a first run at Abaqus defaults reached 16 percent at the knee and was discarded, <code>RESULTS_LOG</code> C.1).</p>
+<h2>4. Postbuckling collapse</h2>
+<p>Displacement-controlled to 5 mm end shortening, terminated by hand after the peak once the load had fallen well below it.</p>
+<table>
+<thead>
+<tr>
+<th>Quantity</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ncr, S4 L3 like-for-like</td>
+<td>60.108 N/mm</td>
+</tr>
+<tr>
+<td>buckling end shortening</td>
+<td>0.237 mm</td>
+</tr>
+<tr>
+<td><strong>collapse Npk</strong></td>
+<td><strong>230.08 N/mm at u = 2.898 mm</strong></td>
+</tr>
+<tr>
+<td><strong>Npk / Ncr</strong></td>
+<td><strong>3.828</strong></td>
+</tr>
+<tr>
+<td>centre deflection at collapse</td>
+<td>7.8 mm = 3.9 thicknesses</td>
+</tr>
+<tr>
+<td>load after collapse</td>
+<td>62 N/mm (27 percent of peak)</td>
+</tr>
+<tr>
+<td>stabilisation, max incremental</td>
+<td>0.4 percent PASS</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Damage sequence</strong> (first element to reach criterion 1.0):</p>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>u mm</th>
+<th>N / Ncr</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>fibre compression, +-45 plies</td>
+<td>2.146</td>
+<td>3.26</td>
+</tr>
+<tr>
+<td>fibre compression, 0 plies</td>
+<td>2.646</td>
+<td>3.67</td>
+</tr>
+<tr>
+<td>matrix tension, +-45 plies</td>
+<td>2.846</td>
+<td>3.80</td>
+</tr>
+<tr>
+<td>matrix compression, +-45 plies</td>
+<td>2.901</td>
+<td>3.82</td>
+</tr>
+<tr>
+<td><strong>peak load</strong></td>
+<td><strong>2.898</strong></td>
+<td><strong>3.83</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>The mechanism.</strong> The damage maps at peak show the fibre-compression variable concentrated at two diagonally opposite corners of the bay, with lesser damage along the straight edge strips next to them, and the interior (the buckle crests) clean. That is the effective-width mechanism made visible: in the postbuckled state the membrane load migrates from the deflected middle to the edge strips, and the bay fails when those strips reach fibre compressive strength. The collapse load agrees with the von Karman estimate sqrt(Nfpf Ncr) = 233 N/mm to 1.3 percent. The formula uses the uniaxial membrane FPF of the 0 degree plies, while the model first damages the +-45 plies in a biaxial corner state, so the agreement is corroboration, not proof; what makes the value trustworthy is the sensitivity and mesh checks below.</p>
+<p><strong>Sensitivity.</strong> The imperfection sweep (1, 5, 10 percent of thickness) spans 230.23 to 229.85 N/mm, a range of 0.17 percent, with the damage sequence identical to the third decimal of shortening. Halving G_ft and G_mc moves the collapse load by 0.03 percent, which matters because those two energies are the least traceable inputs. The descending branch is path-dependent and is not claimed.</p>
+<p><strong>Mesh.</strong> L2, L3 and L4 give 232.34 (ratio 3.829), 230.08 (3.828) and 232.86 (3.886) N/mm, a 1.2 percent range against a pre-registered 5 percent expectation. The collapse load is not monotonic in mesh, and the ratio rises with refinement because the eigenvalue keeps falling while the collapse load does not; damage initiation at a localised corner is very mildly mesh dependent, which is the expected behaviour of an initiation criterion with energy-regularised evolution. The quoted collapse load is 230 N/mm, plus or minus 1.5 percent for mesh.</p>
+<h2>5. Figures</h2>
+<ul>
+<li><code>figures/P6_convergence.png</code> mesh convergence of Ncr.</li>
+<li><code>figures/P6_layups.png</code> the four-layup buckling study.</li>
+<li><code>figures/P6_modes.png</code>, <code>figures/P6_shear_modes.png</code> mode shapes.</li>
+<li><code>figures/P_QI_L3_SS_IMP05_curve.png</code> load against end shortening, with the damage events marked.</li>
+<li><code>figures/P_QI_L3_SS_IMP05_damage_peak.png</code> U3 and the damage maps at collapse, showing the corner localisation.</li>
+</ul>
+<h2>6. Predictions that failed</h2>
+<ol>
+<li><strong>The coupled-layup buckling band.</strong> Written at 1.5 percent against a Kirchhoff reference, missed by 2.0 to 2.5 percent. The mechanism is transverse shear, quantified; the band was wrong, not the model. This is the project's one pre-registered failure and it is left as written.</li>
+<li><strong>The first damage mode.</strong> I predicted matrix damage in the 90 or +-45 plies at the buckle crests. The first damage is fibre compression in the outer +-45 plies at 3.26 Ncr, at the corners. At a buckle of four thicknesses the bending and edge-strip strains dominate and the outermost plies see them first. The prediction that fibre compression in the 0 plies precipitates collapse held.</li>
+<li><strong>Damage location.</strong> I expected the crests; it is the corner edge strips. The effective-width argument, not the local buckling stress, sets the collapse.</li>
+</ol>
+<h2>7. Licence and limitations</h2>
+<p><strong>Can claim:</strong> the D16/D26 knock-down and the shear asymmetry; the transverse-shear decomposition; the corner-localised effective-width mechanism; the SS-to-CC bracket on Ncr; the imperfection and fracture-energy insensitivity of the collapse load.</p>
+<p><strong>Cannot claim:</strong> any specific aircraft; the collapse load as a joint failure prediction (simply supported corner, no clip, no fasteners); delamination (not modelled, and a real laminate at 3.9 thicknesses may delaminate at the crests first); anything after the peak; combined compression and shear (not run); in-situ strengths, thermal residual stress, moisture or temperature knock-downs; fastener holes.</p>
+<p><strong>Sensitivity to input.</strong> For Ncr, ply thickness (scales with t cubed, and the same prepreg is quoted at 0.125 and 0.131 mm, a 15 percent difference). For collapse, the fibre compressive strength XC, since Ncoll is roughly sqrt(Ncr Nfpf) and Nfpf scales with XC; this project uses the low Camanho nominal value XC = 1200 MPa, and a 1500 MPa card would raise the collapse load by about 12 percent.</p>
+<h2>8. What I would do next</h2>
+<p>Add the stringers as beams or shells and the corner clip, so the corner licence disappears and the SS number becomes a bound rather than the answer. Add cohesive interfaces at the crests to see whether delamination precedes fibre failure. Run combined compression and shear, which is the real load case. And trace the two memory-sourced fracture energies to Maimi et al. 2007 Part II, which the sensitivity run shows will not move the collapse answer but should be closed.</p>
+    <p class="report-source">Report text as written for the project; figures are on the project summary page.</p>
+  </article>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <dl class="tblock">
+      <div><dt>Drawn by</dt><dd>Usman Bashir</dd></div>
+      <div><dt>Contact</dt><dd><a href="mailto:usman.bashir1933@gmail.com">usman.bashir1933@gmail.com</a></dd></div>
+      <div><dt>Checked</dt><dd>Every number traces to the project report</dd></div>
+    </dl>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

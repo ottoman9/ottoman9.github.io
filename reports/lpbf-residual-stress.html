@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>L-PBF Residual Stress in IN625: a Melt-Pool Calibration That Holds at One Point, and Three Negatives With Mechanisms | Technical report | Usman Bashir</title>
+<meta name="description" content="Full technical report: L-PBF Residual Stress in IN625: a Melt-Pool Calibration That Holds at One Point, and Three Negatives With Mechanisms.">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body class="report-page">
+
+<header class="site">
+  <div class="bar">
+    <div class="wrap nav-row">
+      <a class="brand" href="../index.html">Usman Bashir</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">Menu</button>
+      <nav class="primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#publication">Publication</a>
+        <a href="../index.html#tools">Tools</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </div>
+  <div class="legend" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+</header>
+
+<main>
+  <div class="wrap report-bar">
+    <a class="crumb" href="../projects/lpbf-residual-stress.html">Back to the project summary</a>
+    <button class="btn quiet print-btn" type="button" onclick="window.print()">Print or save as PDF</button>
+  </div>
+  <article class="report">
+<h1>L-PBF Residual Stress in IN625: a Melt-Pool Calibration That Holds at One Point, and Three Negatives With Mechanisms</h1>
+<p><strong>Author:</strong> Usman Bashir, BSc Metallurgical and Materials Engineering
+<strong>Date:</strong> 2026-08-31
+<strong>Solver:</strong> Abaqus 2024/Standard, 4 cores</p>
+<p><em>Internal working records cited in this report (for example DECISIONS, RESULTS_LOG and the sources ledger) are available on request.</em></p>
+<hr />
+<blockquote>
+<p><strong>A note on how to read this.</strong> This report contains a retraction.
+A result this project logged as a pass was withdrawn by its own
+audit, and the sections below present it as such rather than
+quietly omitting it. Section 8 lists every disclosure that would be
+invisible from the plots.</p>
+</blockquote>
+<h2>0. Executive summary</h2>
+<p>Laser powder bed fusion leaves a part in tension. Cut it off the plate
+and it springs. NIST AM Bench 2018 published the machine settings, the
+geometry, and the measured spring for an IN625 bridge: <strong>1.276 mm
+upward at ridge 1</strong> after a partial wire-EDM cut. This project asked
+whether a 4-core Abaqus model, with nothing tuned against that number,
+could land inside a pre-declared plus or minus 25 percent band.</p>
+<p><strong>It could not, and the interesting part is why.</strong></p>
+<p><strong>M1, melt pool.</strong> Absorptivity was calibrated on one case only, the
+AMB2018-01 infill condition (195 W, 800 mm/s), and frozen at
+<strong>eta = 0.66</strong>. That case passes: solidus width and depth 144.6 and
+88.6 um against measured 133 and 91 um. Both holdouts miss, and the
+misses are monotonic in scan speed: too shallow at 400 mm/s, too large
+at 1200 mm/s. A counterfactual shows the misses are structural rather
+than a mis-set eta: rescuing cmb_a would need an absorptivity of 1.69,
+above unity, and cmb_c would need 0.19, below the declared floor. M1
+is a single-point calibration, not a validated process window
+(Figures 1 and 2).</p>
+<p><strong>M2 thermal.</strong> The bridge was voxelized from the NIST STL to within
+0.04 percent of its exact volume. Only three super-layer thicknesses
+land on the part's own z planes, so the lumping ladder has two
+admissible rungs, not three. Both solved. The activation artifact,
+measured in the real configuration, is <strong>0.64 percent coarse and 0.67
+percent fine</strong> against a before-the-fact prediction of about 0.6
+percent. The lumped history peaks well below the solidus and therefore
+contains no millimetre-scale eigenstrain.</p>
+<p><strong>M2 deflection: four attempts, item 2 closed as a MISS</strong> (Figure 3).</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Model</th>
+<th>Result</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>free-curl gradient, invented delta-T</td>
+<td>+1.115 / +1.166 mm</td>
+<td><strong>RETRACTED</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td>traced eigenstrain, one-shot, welded, real cut</td>
+<td>+0.0709 mm</td>
+<td>MISS</td>
+</tr>
+<tr>
+<td>3</td>
+<td>traced eigenstrain, layerwise, welded, real cut</td>
+<td>-0.0600 mm</td>
+<td>MISS</td>
+</tr>
+<tr>
+<td>4</td>
+<td>full method transplant</td>
+<td>never run</td>
+<td><strong>STOPPED at reading</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Attempt 1 landed inside the band and was withdrawn on internal audit:
+it had <strong>zero plasticity</strong> (0 of 238,976 integration points yielded),
+an <strong>inert EDM step</strong> that removed nothing and was nonetheless graded
+against a post-cut measurement, and its constraint condition had been
+<strong>selected after seeing the answer</strong>.</p>
+<p><strong>Phase B-2, scan strategy: FAIL</strong> (Figure 5). The production-tool
+method (path-aware anisotropic inherent strain) separates the
+strategies by a factor of two, but chessboard is third of four rather
+than worst, and the strip class occupies both extremes.</p>
+<p><strong>Phase C, compensation: workflow demonstration only</strong> (Figure 6). The
+95.4 percent reduction was produced on the retracted elastic model,
+where inverting and reapplying a displacement field is guaranteed by
+superposition.</p>
+<p><strong>The substantive contribution</strong> is three negatives with mechanisms
+and citations, and one calibration that holds where it was calibrated.</p>
+<h2>1. The problem</h2>
+<p>In L-PBF a 20 um layer is melted, frozen, and reheated by every later
+pass. Hot metal wants to shrink; colder metal below will not let it.
+The stored tension is residual stress, and cutting the part off the
+plate releases it as a spring, which is the quantity a shop pays for.</p>
+<p>AM Bench 2018 makes this falsifiable: published process parameters,
+published geometry, and a measured 1.276 mm.</p>
+<h2>2. Method and discipline</h2>
+<p>Two rules did the real work, and both are why the numbers below can be
+trusted more than a clean-looking result would be.</p>
+<p><strong>Every number traces to a ledger row or is a labelled assumption with
+its bias direction stated.</strong> Where a value could not be traced, the
+route is recorded as closed rather than filled in.</p>
+<p><strong>Declare before solving.</strong> Configurations, bands and quantitative
+predictions were written down before runs, so outcomes confirm or
+refute a stated expectation. <strong>Two of those predictions failed and are
+reported as failed</strong> (Section 8.9). That is the evidence the
+pre-registrations were real.</p>
+<h2>3. M1: melt pool, and where a frozen source stops working</h2>
+<p>Goldak double ellipsoid via a DFLUX subroutine, IN625 properties from
+Lim et al. Absorptivity calibrated on cmb_b only, then frozen.</p>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Process</th>
+<th>Measured W/D um</th>
+<th>Predicted W/D um</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>cmb_a</td>
+<td>150 W, 400 mm/s</td>
+<td>171 / 151</td>
+<td>176.1 / 107.5</td>
+<td>MISS, depth -28.8 pct</td>
+</tr>
+<tr>
+<td>cmb_b</td>
+<td>195 W, 800 mm/s</td>
+<td>133 / 91</td>
+<td>144.6 / 88.6</td>
+<td><strong>PASS</strong></td>
+</tr>
+<tr>
+<td>cmb_c</td>
+<td>195 W, 1200 mm/s</td>
+<td>100 / 60</td>
+<td>125.7 / 83.2</td>
+<td>MISS, +25.7 and +38.7 pct</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The mechanism.</strong> The source depth semi-axis was frozen at cmb_b's
+measured depth, which pins the predicted depth-to-width ratio between
+0.61 and 0.66 for every case, while the measured ratios span 0.600 to
+0.883. Absorptivity scales a pool but cannot change its aspect ratio.</p>
+<p><strong>Two findings from the calibration itself.</strong> Fitting the measured
+sensitivity gives dimension proportional to eta to the power 0.187 for
+width and 0.362 for depth, far below the 0.5 assumed. So eta is a weak
+knob: across the entire declared range 0.30 to 1.00 the predicted
+width moves only 25 percent. Inverting that, the plus or minus 10
+percent band could have been satisfied by any eta from 0.49 to 0.86.
+<strong>The honest statement is not eta = 0.66 but eta near 0.5 to 0.86 with
+0.66 as the centre</strong>, and any downstream quantity sensitive to
+absorbed energy inherits that spread.</p>
+<h2>4. M2 thermal, and an audit that failed on purpose</h2>
+<p>The bridge (75.000 x 5.000 x 12.500 mm from the STL, note the ledger
+said 12 mm) was voxelized on a 0.5 mm lattice that reproduces every
+axis-aligned feature exactly and staircases only the 45 degree leg
+overhangs. Voxel volume 3734.0 mm3 against an exact 3732.5, an error
+of +0.04 percent in the direction predicted beforehand.</p>
+<p>Absorbed energy enters as eta times power over the real scan time, so
+the frozen eta is the only thing M2 inherits from M1.</p>
+<p><strong>Activation is a declared parameter, because it had to be measured.</strong>
+Abaqus does not activate elements at their initial condition: an
+isolated zero-flux experiment showed newly activated nodes are raised
+to the neighbouring field temperature, creating 88 percent of the
+domain enthalpy from nothing. New material now enters at a declared
+298 K. The residual artifact, measured in the real configuration, is
+0.64 and 0.67 percent for the two rungs.</p>
+<p><strong>C3 item 6 FAILS and stays failing.</strong> Re-derived with a corrected
+integrator, M1 closes at 1.956, 1.953 and 1.869 percent against a
+1 percent threshold. Two of those verdicts flipped from PASS when the
+auditor was fixed, and the original figures are preserved in the log.
+The auditor was cleared by self-test to 1e-12 and both auditor-side
+explanations were eliminated; the remaining candidate is solver time
+integration across the latent heat band, logged as open and
+quantified rather than guessed at.</p>
+<h2>5. M2 deflection: the retraction, and three honest attempts</h2>
+<h3>5.1 Sequential coupling of the lumped thermal</h3>
+<p>The brief's default. It maxes out near 0.2 mm and can point the wrong
+way. The reason is physical: the first lumped layer on the plate sink
+peaks at 313 K and the fine rung peaks at 907.6 K, never reaching the
+1563 K solidus. <strong>That history does not contain a millimetre-scale
+spring</strong>, so no amount of mechanical post-processing can produce one.</p>
+<h3>5.2 The retracted result</h3>
+<p>An inherent-strain model was built with a stress-free linear
+temperature gradient running from ambient at the plate to the solidus
+at the top, cooled under a three-point locator. It gave +1.115 mm
+coarse and +1.166 mm fine, inside the band, and was logged as a PASS.</p>
+<p><strong>It was withdrawn by internal audit.</strong> Read from the results file
+rather than the log:</p>
+<ul>
+<li><strong>Zero plasticity.</strong> 0 of 238,976 integration points yielded, peak
+  Mises 402.5 MPa against a 479.2 MPa yield. The model is elastic. The
+  yield card, and the multi-day search behind it, do not touch the
+  number at all.</li>
+<li><strong>No cut was modelled.</strong> The step named EDM re-declared identical
+  boundary conditions and removed no elements. Displacements and
+  stresses are identical before and after it. The output was labelled
+  "after EDM" and graded against a post-cut measurement.</li>
+<li><strong>The constraint was chosen after seeing the answer.</strong> The glued
+  sequence, which is what a part built on a plate actually
+  experiences, gave 0.11 mm. Removing the glue gave 1.115 mm. The
+  zero-plasticity finding explains the factor of ten: the glued model
+  yields and relaxes, the free model never yields.</li>
+</ul>
+<p>Item 3 (convergence) and item 5 (compensation) are downgraded with it,
+because both sit on that model.</p>
+<h3>5.3 Two traced attempts, and why they miss</h3>
+<p>Both used published, calibrated inherent-strain components
+(-0.011 longitudinal, -0.007 transverse, 0 build direction), the
+benchmark's own scan strategy for orientation, the part welded to the
+plate while it contracts, and a genuinely modelled release. One
+applied the strain in one shot (+0.0709 mm), the other layer by layer
+per the published method (-0.0600 mm). Both miss by more than an order
+of magnitude.</p>
+<p><strong>The mechanism.</strong> The traced eigenstrain is about five times the
+yield strain of this material card (479.2 MPa over 207.5 GPa). Plastic
+flow accommodates it rather than storing it: 72 percent of the model
+yielded in the first, <strong>99.9 percent</strong> in the second. Almost no
+elastic energy survives to be released.</p>
+<h3>5.4 The fourth attempt, stopped at the reading stage</h3>
+<p>A full method transplant was authorised, conditional on first reading
+the source method end to end and reproducing its own validation case.
+Reading it stopped the attempt, for three reasons:</p>
+<ol>
+<li><strong>The eigenstrain values are a fit, not material constants.</strong> They
+   were obtained by Newton-Raphson optimisation against the authors'
+   own measured deflection until relative error fell below 0.5
+   percent, on a cantilever coupon, with that software's flow-stress
+   data, their mesh, and their lumping of 50 modelled layers standing
+   in for 625 physical ones.</li>
+<li><strong>The constitutive core is unpublished.</strong> Their plasticity is
+   mechanism-based (dislocation interaction, Hall-Petch at 20 um grain
+   size, solid solution strengthening) with parameters stated to come
+   from prior work and not given.</li>
+<li><strong>The validation geometry is unpublished</strong>, so the reproduction
+   gate that would have proven the implementation cannot be run.</li>
+</ol>
+<p><strong>Two citations from that reading convert this from our failure into a
+statement about the method.</strong> The source applies its eigenstrain
+against a <strong>deliberately raised virgin yield</strong>, because the inherent
+strain method does not account for process-induced hardening. And even
+so, calibrated on its own coupon, it <strong>underpredicts its own bridge by
+27 and 18 percent</strong>, while its best thermo-mechanical model still
+underpredicts by 10 to 19 percent.</p>
+<h3>5.5 Attribution: is it our material card?</h3>
+<p>A yield sensitivity sweep was run as an attribution axis, explicitly
+not graded and explicitly not a fifth attempt (Figure 4). Across the
+converged range, 479.2 MPa (annealed wrought) to 600 MPa, the spring
+stays at or below 0.07 mm with plasticity near total. <strong>The material
+card does not explain the miss.</strong></p>
+<p>Stated with its defects, always: two of five traced points (660 and
+720 MPa) did not converge, the response is non-monotonic and flips
+sign at 600 MPa, and the non-physical 5000 MPa bracket reached a
+plastic strain of 2.21 and -7.58 mm and is withdrawn as unusable.</p>
+<h2>6. Phase B-2: scan strategy ranking, FAIL</h2>
+<p>Path-aware anisotropic inherent strain, the method production tools
+use for this question. Strategy changes the per-element orientation
+field and nothing else.</p>
+<table>
+<thead>
+<tr>
+<th>Strategy</th>
+<th>change across release</th>
+<th>post-cut rise</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>strip_X, along the length</td>
+<td>+0.0311 mm</td>
+<td>+0.0779 mm</td>
+</tr>
+<tr>
+<td>chess, 5 mm islands</td>
+<td>+0.0577 mm</td>
+<td>+0.0966 mm</td>
+</tr>
+<tr>
+<td>strip_Y, across the width</td>
+<td>+0.0586 mm</td>
+<td>+0.0881 mm</td>
+</tr>
+<tr>
+<td>strip_XY, 90/90</td>
+<td>+0.0653 mm</td>
+<td>+0.1032 mm</td>
+</tr>
+</tbody>
+</table>
+<p>The gate requires chessboard worst and strip-class least. <strong>Chessboard
+is third of four, and the strip class occupies both extremes. FAIL.</strong></p>
+<p>Two reportable reasons. Orientation alone does not carry what makes a
+chessboard bad, namely island boundaries, short vectors and start-stop
+effects, which was pre-registered and held. And grouping by "strip
+class" is not meaningful under this model, because strip direction
+relative to the part axis dominates.</p>
+<p>This is a sharper failure than the previous attempt, where three
+strategies clustered within 0.01 mm and told us nothing. Here they
+separate by a factor of two and the ranking still does not match.</p>
+<h2>7. Phase C: compensation, workflow demonstration only</h2>
+<p>Ridge-1 deviation fell from +1.1151 mm to +0.0514 mm, a 95.4 percent
+reduction. <strong>This was produced on the retracted elastic model, and in
+a linear elastic system inverting a displacement field and reapplying
+it is guaranteed by superposition.</strong> It demonstrates that the
+compensation workflow is wired correctly. It is not evidence about
+compensation physics, and the caveat belongs in the same sentence as
+the number wherever it appears.</p>
+<h2>8. Disclosures</h2>
+<ol>
+<li><strong>An initially logged PASS was retracted on internal audit.</strong> C3
+   item 2 was reported as passing at +1.115 and +1.166 mm. It was
+   withdrawn for zero plasticity, an inert EDM step, and
+   outcome-based selection of the constraint. Items 3 and 5 are
+   downgraded with it.</li>
+<li><strong>C3 item 8 was revised after an observed failure.</strong> The peak
+   temperature ceiling moved from 5000 K to a 20000 K screen once the
+   original was shown to fail at every physical eta. This is a gate
+   changed after a failure and is disclosed as such.</li>
+<li><strong>C3 item 6 fails everywhere.</strong> M1 at 1.87 to 1.96 percent against
+   a 1 percent threshold, cause not decomposed. M2 globally, with the
+   usable contamination number being the 0.64 and 0.67 percent
+   activation artifact.</li>
+<li><strong>M1 is a single-point calibration</strong>, not a validated process
+   window, and eta is only pinned to roughly 0.5 to 0.86.</li>
+<li><strong>The benchmark does not publish material properties.</strong> It supplies
+   powder characterisation, process parameters, geometry and mill
+   certificates only. Every modelling group brings its own card, which
+   is why ours is ours.</li>
+<li><strong>The yield curve is a digitised figure</strong>, wrought annealed rather
+   than as-built LPBF, carried as a labelled assumption with <strong>no bias
+   direction asserted</strong>, because lower yield means more plastic flow
+   while plastic flow also relieves the stress that drives springback,
+   and that cannot be signed cleanly.</li>
+<li><strong>Nothing is labelled "after EDM" unless a cut is modelled.</strong> The
+   retracted model does not model one; attempts 2 and 3 do.</li>
+<li><strong>The two thermal rungs differ by 0.44 percent of metal</strong>, because
+   refining only in z staircases the overhangs differently. Flagged
+   before any comparison, and it never became load-bearing.</li>
+<li><strong>Two pre-registered predictions failed and are reported as
+   failed.</strong> Layerwise application was predicted to yield less and
+   spring more; it yielded more (99.9 percent) and sprang the wrong
+   way. And scanning along the bridge's length was predicted to
+   deflect most; it deflects least, because bending needs a
+   through-thickness gradient rather than a large uniform strain.</li>
+<li><strong>A declaration of mine was wrong and was corrected.</strong> Phase B-2
+    was declared as inheriting an elastic parent. It was built on the
+    constrained sequence and yields heavily. The runs are the
+    authority over the declaration.</li>
+<li><strong>The yield sensitivity sweep is incomplete</strong>, non-monotonic, and
+    its bracket run is withdrawn.</li>
+</ol>
+<h2>9. What this report may and may not claim</h2>
+<p><strong>May claim.</strong> The M1 calibration at 195 W and 800 mm/s. The M1 speed
+trend and its aspect-ratio mechanism, including the counterfactual
+that no admissible absorptivity rescues either holdout. The measured
+activation convention and the artifact it leaves. That sequential
+coupling of a lumped thermal history cannot produce the NIST spring,
+with the reason. That a published inherent-strain calibration is a fit
+to one coupon, one card and one discretisation, and does not transfer,
+by the source's own evidence and ours. That within a traced yield
+range the material card does not explain the miss.</p>
+<p><strong>May not claim.</strong> A melt-pool model across the CBM process window. A
+deflection prediction against A2: item 2 is a MISS. A converged
+lumping ladder: item 3 is downgraded. A scan-strategy ranking: item 4
+fails. Compensation physics: item 5 is a workflow demonstration. Eta
+as a sharp 0.66. Any result from the retracted model.</p>
+<h2>10. Figures</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>media/fig1_m1_meltpool.png</code></td>
+<td>M1 predicted vs measured, per case</td>
+</tr>
+<tr>
+<td><code>media/fig2_m1_speed_trend.png</code></td>
+<td>M1 error monotonic in scan speed</td>
+</tr>
+<tr>
+<td><code>media/fig3_deflection_story.png</code></td>
+<td>All four item 2 attempts vs 1.276 mm, retracted one distinguished</td>
+</tr>
+<tr>
+<td><code>media/fig4_yield_sensitivity.png</code></td>
+<td>Yield attribution axis, non-converged points marked</td>
+</tr>
+<tr>
+<td><code>media/fig5_b2_ranking.png</code></td>
+<td>Phase B-2 ranking against the gate</td>
+</tr>
+<tr>
+<td><code>media/fig6_compensation.png</code></td>
+<td>Compensation, with the superposition caveat</td>
+</tr>
+</tbody>
+</table>
+    <p class="report-source">Report text as written for the project; figures are on the project summary page.</p>
+  </article>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <dl class="tblock">
+      <div><dt>Drawn by</dt><dd>Usman Bashir</dd></div>
+      <div><dt>Contact</dt><dd><a href="mailto:usman.bashir1933@gmail.com">usman.bashir1933@gmail.com</a></dd></div>
+      <div><dt>Checked</dt><dd>Every number traces to the project report</dd></div>
+    </dl>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>
