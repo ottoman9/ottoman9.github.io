@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thermo-Mechanical Modelling of Additive Manufacturing | Usman Bashir</title>
+<meta name="description" content="First-author journal paper: thermo-mechanical analysis of additive manufacturing for material properties estimation of layered polymer composite, Mechanics of Advanced Materials and Structures, 2024.">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="bar">
+    <div class="wrap nav-row">
+      <a class="brand" href="index.html">Usman Bashir</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">Menu</button>
+      <nav class="primary">
+        <a href="index.html#work">Work</a>
+        <a href="index.html#publication">Publication</a>
+        <a href="index.html#tools">Tools</a>
+        <a href="index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </div>
+  <div class="legend" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+</header>
+
+<main>
+  <div class="wrap project-header">
+    <a class="crumb" href="index.html#publication">Publication</a>
+    <h1>Thermo-Mechanical Analysis of Additive Manufacturing for Layered Polymer Composites</h1>
+    <dl class="tblock">
+      <div><dt>Journal</dt><dd>Mechanics of Advanced Materials and Structures, 31(26)</dd></div>
+      <div><dt>Year and pages</dt><dd>2024, 8180 to 8190</dd></div>
+      <div><dt>Authorship</dt><dd><strong>First author</strong>of ten</dd></div>
+      <div><dt>DOI</dt><dd><a href="https://doi.org/10.1080/15376494.2023.2255258" target="_blank" rel="noopener">10.1080/15376494.2023.2255258</a></dd></div>
+    </dl>
+  </div>
+
+  <section>
+    <div class="study"><div class="prose">
+      <h3>Summary</h3>
+      <p>The paper builds a coupled thermal-mechanical finite element model of fused deposition modelling for an HDPE, PVC and ABS layered polymer composite, using a moving volumetric heat source with element activation to reproduce the layer-by-layer print. The temperature history is carried into a mechanical analysis loaded in isostress and isostrain directions to mimic a tensile test. Because the model carries the residual stresses left by printing, it tracks measured strength more closely than classical rule-of-mixtures bounds.</p>
+      <h3>Key findings</h3><ul class='findings'><li>Deposition temperature is capped near 200 C, with the first printed layer briefly overshooting to about 220 C.</li><li>Each new layer reheats the material beneath to roughly 100 C; that reheat and cool cycle is the main source of residual stress.</li><li>Predicted longitudinal residual stress ranges from about -3.6 MPa to +4.0 MPa across the cross section.</li><li>With residual stress included, the finite element strength bounds sit about 10 percent from the classical isostrain and isostress bounds.</li><li>Measured tensile strength, about 8 MPa, falls below both bounds, attributed to interfacial discontinuities between printed layers.</li></ul>
+      <p style="margin-top:24px"><strong>Bashir, U.</strong>, Hassan, A., Ahmed, F., Zain-ul-abdein, M., Mobeen, H., Dildar, A., Hayat, Q., Ijaz, H., Asad, M., and Djavanroodi, F. (2024).</p>
+      <p><a href="projects/lpbf-residual-stress.html">The follow-on study carries this method from polymer to metal laser powder bed fusion.</a></p>
+    </div></div>
+  </section>
+
+  <section class="fig-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Figures</h2></div>
+      <div class="pub-figs"><figure class="result-fig"><div class="plate"><img src="assets/img/publication/g_model_geometry.png" alt="Model geometry" loading="lazy"></div><figcaption>The 3D element model of the layered HDPE, PVC and ABS composite, showing the printed passes and their blended interfaces before the print simulation activates them layer by layer.<span class="credit">Figure from Bashir et al. (2024), Mechanics of Advanced Materials and Structures, Taylor and Francis.</span></figcaption></figure><figure class="result-fig"><div class="plate"><img src="assets/img/publication/g_thermal_field_printing.jpg" alt="Thermal field during printing" loading="lazy"></div><figcaption>Temperature field at six moments during the simulated print, as the moving heat source and element activation lay down the HDPE, PVC and ABS passes in sequence.<span class="credit">Figure from Bashir et al. (2024), Mechanics of Advanced Materials and Structures, Taylor and Francis.</span></figcaption></figure><figure class="result-fig"><div class="plate"><img src="assets/img/publication/g_thermal_history.png" alt="Thermal history" loading="lazy"></div><figcaption>Temperature against time at six points along the first printed layer: each point overshoots toward 220 C as it is deposited, then cools in stages as later elements are activated nearby.<span class="credit">Figure from Bashir et al. (2024), Mechanics of Advanced Materials and Structures, Taylor and Francis.</span></figcaption></figure><figure class="result-fig"><div class="plate"><img src="assets/img/publication/g_residual_stress.png" alt="Residual stress" loading="lazy"></div><figcaption>Longitudinal residual stress across the transverse direction, labelled by pass and blend region. The first printed material carries the largest swings, having seen the most heating and cooling cycles.<span class="credit">Figure from Bashir et al. (2024), Mechanics of Advanced Materials and Structures, Taylor and Francis.</span></figcaption></figure><figure class="result-fig"><div class="plate"><img src="assets/img/publication/g_validation_stress_strain.png" alt="Validation" loading="lazy"></div><figcaption>True stress against true strain for the equal volume fraction blend: measured tensile curve, theoretical isostrain and isostress bounds, and the finite element prediction including residual stress.<span class="credit">Figure from Bashir et al. (2024), Mechanics of Advanced Materials and Structures, Taylor and Francis.</span></figcaption></figure></div>
+    </div>
+  </section>
+
+  <div class="wrap next-project">
+    <a href="projects/crash-box.html">Next: Crash box under oblique impact</a>
+    <a href="index.html">Back to all work</a>
+  </div>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <dl class="tblock">
+      <div><dt>Drawn by</dt><dd>Usman Bashir</dd></div>
+      <div><dt>Contact</dt><dd><a href="mailto:usman.bashir1933@gmail.com">usman.bashir1933@gmail.com</a></dd></div>
+      <div><dt>Checked</dt><dd>Every number traces to the project report</dd></div>
+    </dl>
+  </div>
+</footer>
+
+<script src="assets/js/main.js"></script>
+</body>
+</html>

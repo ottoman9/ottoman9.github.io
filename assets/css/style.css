@@ -334,3 +334,35 @@ video { width: 100%; background: #111317; }
 .result-fig.tall .plate img { max-height: 860px; width: auto; }
 .hero-figure .plate img { max-height: 72vh; width: auto; }
 .hero-figure .plate video { max-height: 72vh; }
+
+/* Motion and gallery */
+.media-section { padding: 48px 0 16px; }
+.media-section h2 { font-size: 36px; margin-bottom: 28px; }
+.reel { display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px; }
+.reel .clip { margin: 0; }
+.reel .clip:only-child, .reel .clip.wide { grid-column: 1 / -1; }
+.reel .plate { aspect-ratio: 16 / 9; background: #111317; border-color: #111317; }
+.reel video { width: 100%; height: 100%; object-fit: contain; }
+.gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 40px; }
+.gallery figure { margin: 0; }
+.gallery .plate { aspect-ratio: 4 / 3; cursor: zoom-in; }
+.gallery .plate img { padding: 10px; }
+.gallery figcaption { font-size: 14px; }
+.credit { display: block; font-size: 13px; color: var(--ink-3); margin-top: 4px; font-style: italic; }
+@media (max-width: 960px) { .gallery { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .reel, .gallery { grid-template-columns: 1fr; } }
+
+/* Lightbox */
+.lightbox { position: fixed; inset: 0; background: rgba(10, 11, 13, 0.94); display: none; z-index: 50;
+  align-items: center; justify-content: center; padding: 24px; flex-direction: column; gap: 14px; }
+.lightbox.open { display: flex; }
+.lightbox img { max-width: min(1600px, 96vw); max-height: 82vh; width: auto; height: auto; background: #fff; }
+.lightbox p { color: #d9dcd6; max-width: 70em; text-align: center; font-size: 15px; margin: 0; }
+.lightbox button { position: absolute; top: 16px; right: 16px; background: none; border: 1px solid #555; color: #eee;
+  font: 500 14px/1 var(--sans); padding: 10px 14px; cursor: pointer; border-radius: 2px; }
+
+/* Publication page */
+.pub-figs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 32px; }
+.findings { list-style: none; padding: 0; margin: 0; border-top: 2px solid var(--line); }
+.findings li { padding: 14px 0; border-bottom: 1px solid var(--rule); }
+@media (max-width: 640px) { .pub-figs { grid-template-columns: 1fr; } }
