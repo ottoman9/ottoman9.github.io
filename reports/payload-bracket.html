@@ -1,0 +1,1184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Payload Bracket for a 2 kg Avionics Box: Modal Decoupling, GEVS Random Vibration, 3-Sigma Margins and Steinberg Fatigue | Technical report | Usman Bashir</title>
+<meta name="description" content="Full technical report: Payload Bracket for a 2 kg Avionics Box: Modal Decoupling, GEVS Random Vibration, 3-Sigma Margins and Steinberg Fatigue.">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body class="report-page">
+
+<header class="site">
+  <div class="bar">
+    <div class="wrap nav-row">
+      <a class="brand" href="../index.html">Usman Bashir</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">Menu</button>
+      <nav class="primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#publication">Publication</a>
+        <a href="../index.html#tools">Tools</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </div>
+  <div class="legend" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+</header>
+
+<main>
+  <div class="wrap report-bar">
+    <a class="crumb" href="../projects/payload-bracket.html">Back to the project summary</a>
+    <button class="btn quiet print-btn" type="button" onclick="window.print()">Print or save as PDF</button>
+  </div>
+  <article class="report">
+<h1>Payload Bracket for a 2 kg Avionics Box: Modal Decoupling, GEVS Random Vibration, 3-Sigma Margins and Steinberg Fatigue</h1>
+<p><strong>Author:</strong> Usman Bashir, BSc Metallurgical and Materials Engineering
+<strong>Date:</strong> 2026-09-28
+<strong>Solver:</strong> Abaqus/Standard 2024, C3D10 solids, cpus=2 (Phases 1, 2, 2b), except the M6 joint model at P_max, resubmitted at cpus=8</p>
+<p><em>Internal working records cited in this report (for example DECISIONS, RESULTS_LOG and the sources ledger) are available on request.</em></p>
+<p>Style: no em dash or en dash as sentence punctuation.</p>
+<hr />
+<h2>0. Executive summary</h2>
+<p><em>Self-contained. Every statement here is carried from a numbered section or from RESULTS_LOG.md.</em></p>
+<p>A 2 kg avionics box bolted to a launch-vehicle panel by an L-bracket must survive the NASA GEVS random-vibration qualification spectrum (20 to 2000 Hz, 14.1 Grms, 2 min per axis) without its support structure resonating in the spectrum, and without its bolted base joint failing under the same 3-sigma loads. The bracket is aluminium 6061-T6. The baseline (web 6 mm, flange 6 mm) fails on frequency: its first mode is 91.08 Hz, below the declared 100 Hz requirement. The stiffened design (web 7 mm, flange 6 mm, no gussets, bracket V-A) raises the first mode to 101.47 Hz with the originally specified M5 base bolts, passing the frequency requirement, but a nonlinear-contact joint model of that design found two negative joint margins (bolt tension yield and slip, both at Q = 20). The design was then changed to four A286 160 ksi M6 bolts in 6.5 mm holes with 12 mm washers, the smallest fix in the declared order of levers. On the final design, V-A with M6 bolts, every continuum and joint margin is positive.</p>
+<p><strong>Headline numbers, final design (V-A, M6 bolts), 1.6 mm mesh unless noted, d = 3.0 mm base singularity zone, box-mount footprint excluded (d_box = 0).</strong></p>
+<ul>
+<li>First mode: 104.41 Hz at 1.6 mm (M6 geometry). 101.33 Hz is the converged value on the 1.2 mm mesh (M5 geometry, a lower bound for the stiffer M6 design). Requirement 100 Hz: PASS.</li>
+<li>Box RMS accelerations at the centre of gravity, M6 geometry: Q = 10 (X 20.97, Y 22.57, Z 22.11 g), Q = 20 (X 28.86, Y 31.84, Z 30.00 g).</li>
+<li>Worst continuum margin of safety: yield +0.59, ultimate +0.71, both at Q = 20, Y case, on the flange adjacent to the (excluded) box-mount footprint.</li>
+<li>Fatigue outside the singular and excluded zones, M6 geometry, 4x life factor: 9.3e-6 at Q = 10, 9.0e-5 at Q = 20. Fatigue negligible.</li>
+<li>Bolted joint, checked as a joint with a nonlinear contact FE model (preloaded bolts, flange-to-panel contact, finite washers): worst margins at Q = 20 are bolt tension yield +0.024, bolt tension ultimate +0.43, separation (NASA-STD-5020 full-relief definition) above +0.14, slip +0.075, shank shear +2.42, bearing +1.41. Every joint margin is positive.</li>
+<li>V1b, an independent hand model with the flange-root rotational spring, confirms the mechanism behind V1's failure: +5.5 percent against FE on the final design, inside its 10 percent band. V1 itself stays FAIL, unchanged in the record (+50.6 percent); V1b cannot and does not turn it into a pass.</li>
+<li>V2 (mesh convergence, 1.6 against 1.2 mm) is graded PASS: -0.14, -0.34, -0.23 percent on modes 1 to 3.</li>
+<li>Bracket mass: 0.3671 kg with M6 base holes (0.3374 kg baseline), an increase of 0.0297 kg, +8.8 percent of the bracket and +1.3 percent of the total supported mass.</li>
+</ul>
+<p>The validation chain confirms the random-response pipeline is trustworthy and that the declared failures are understood, not hidden. V4 validates the solver's random-response engine to within 0.20 percent against an exact integral. V1 fails by a growing margin because its closed form omits the flange-root rotational spring, and V1b, an independent hand model built specifically to include that spring, closes the gap to within its own 10 percent band without turning V1 itself into a pass. V5b fails because two modes share the box's effective mass in every axis, so Miles' equation on the largest single mode systematically overpredicts the box response. The first-mode requirement stays at 100 Hz as declared (R-1); the baseline fails it and there is no lowering of the goalposts.</p>
+<h2>1. The problem</h2>
+<p>An avionics box mounted on a spacecraft or launch-vehicle primary structure is subjected to random vibration during launch. The structure must transmit the acceleration profile from the base to the box without introducing new resonances in the input spectrum. For this application the requirement is set at a first natural frequency of 100 Hz or higher, to give a decoupling margin above the launch vehicle's own low-frequency modes and the GEVS baseline figures of 50 Hz lateral and 70 Hz thrust. The design question is: what bracket geometry and stiffness are necessary, and after stiffening does the bracket, including its bolted base joint, have positive stress margins and fatigue life to survive 2 minutes of qualification per axis?</p>
+<p><strong>Problem statement.</strong> An aluminium L-bracket (flange and web) carries a 2.0 kg avionics box mounted at the outer corners by four M4 bolts. The bracket is attached to a rigid panel (the fixed-base idealisation) by four base bolts at the underside corners: four A286 160 ksi M6 bolts in the final design, in 6.5 mm holes with 12 mm washers. The original specification and the Phase 2 gate used M5 bolts; the base bolt size was changed to M6 in Phase 2b once a joint model showed two negative M5 margins (Section 4.5). The bracket is subjected to the GEVS component qualification random spectrum: one-sided ASD 0.026 g^2/Hz at 20 and 2000 Hz, 0.16 g^2/Hz at 50 to 800 Hz, overall 14.1 Grms, applied as three independent random excitations in X, Y and Z (the launch vehicle axes), 2 minutes per axis. Two damping cases are analysed: Q = 10 (5 percent critical damping, the baseline) and Q = 20 (2.5 percent critical, the sensitivity case). All results are reported at 3-sigma (3 times the RMS value).</p>
+<p><strong>Baseline and requirements.</strong> Baseline bracket: web and flange both 6 mm thick, 5 mm fillet at the inner corner, no gussets. This thickness is above the brief's guidance (3 to 5 mm) but necessary for the first mode to approach 100 Hz under the declared rotary inertia of the 2 kg box. Requirement: first mode at or above 100 Hz. Margins: yield and ultimate factors per NASA-STD-5001B, 1.25 and 1.40 respectively (TRACED), applied to 3-sigma stress. The bolted joint uses the same yield and ultimate factors on bolt tension, plus a declared separation factor of 1.2 (NASA-STD-5020A, TRACED) and a slip factor of 1.25 (Section 4.5). Fatigue: Steinberg three-band method with an S-N point of 96.5 MPa at 5e8 cycles and exponent b = 6.4, allowable Miner sum 1.0.</p>
+<p><strong>Three phases.</strong> Phase 1 built the model, validated the chain (V1 to V6) and qualified the baseline bracket, and found it failed the first-mode requirement while leaving positive stress margins everywhere the stress was actually converged. Phase 2 stiffened the bracket (web 6 to 7 mm), demonstrated and excluded the washer-edge singularity, and checked the bolted joint with a hand prying calculation, which showed negative margins at the inner bolts. A review found Phase 2 incomplete: under the approved plan a negative margin, joint or continuum, triggers the same design-iteration clause as a failed frequency. Phase 2b (review rulings R-5 to R-14) traced the joint inputs, built a nonlinear-contact FE joint model to replace the hand prying calculation, graded the mesh convergence (V2) and an independent hand model with the root compliance (V1b), studied the box-mount footprint for mesh sensitivity (R-10), and changed the base bolts to M6 once the joint model confirmed two negative margins on the M5 design. Every band, rule and assumption across all three phases was declared in <code>DECISIONS.md</code> before the run it governs; none was retuned afterward.</p>
+<p><strong>Sources status.</strong> The GEVS table and 14.1 Grms are TRACED to GSFC-STD-7000A/B. The NASA-STD-5001B factors (1.25 yield, 1.40 ultimate) are TRACED. The 100 Hz requirement is ASSUMPTION (P7_SOURCES row 2c; the traced GEVS baseline is 50 Hz lateral, 70 Hz thrust); the 100 Hz value is industry practice for additional decoupling margin. The 3-sigma load is TRACED. The Steinberg fractions (68.27, 27.18, 4.28 percent) and exponent b = 6.4 are TRACED. Aluminium 6061-T6 properties E, nu, rho, Fty, Ftu are TRACED (minimums, Fty 240 and Ftu 290 MPa). Test duration is 2 minutes per axis, the approved plan and the GEVS qualification duration; P7_SOURCES row 1k gives 3 minutes per axis as ASSUMPTION and it is overridden by the plan (DECISIONS section 7). The bolted-joint inputs were traced in Phase 2b (P7_SOURCES.md, "R-5 joint inputs", rows 9a to 9x): sixteen TRACED, seven SECONDARY, one ASSUMPTION; the remaining ASSUMPTION items (bolt yield and shear strength for the 160 ksi A286 class, not tabulated in the traced specifications) are carried with a stated conservative bias (Section 4.5).</p>
+<h2>2. Model</h2>
+<p><strong>Geometry.</strong> Axes: X along the web length, Y normal to the web (box on the -Y side), Z normal to the panel. Flange 120 by 80 mm, thickness tf. Web 120 by 100 mm (from the flange underside), thickness tw. Fillet 5 mm radius at the inner corner. Baseline tw = tf = 6 mm, bracket mass from the CAE volume 0.3374 kg. Final design V-A: tw = 7 mm, tf = 6 mm, mass 0.3671 kg with the M6 base holes (0.3677 kg with the original M5 holes; the larger M6 holes remove slightly more material). Increase over the baseline: 0.0297 kg (+8.8 percent of the bracket, +1.3 percent of the total supported mass).</p>
+<p><strong>Material.</strong> SI throughout: m, kg, s, N, Pa. g = 9.80665 m/s^2. Young modulus E = 68.9 GPa (P7_SOURCES gives 69 GPa, a 0.16 percent difference, 0.08 percent in frequency, immaterial), Poisson ratio nu = 0.33, density rho = 2700 kg/m^3. Yield strength Fty = 240 MPa (TRACED minimum), ultimate Ftu = 290 MPa (TRACED minimum).</p>
+<p><strong>Box idealisation.</strong> 2.0 kg point mass at the centre of gravity, located at (60, -30, 55) mm: 60 mm along the web, 30 mm out from the web face, 55 mm along the height. Rotary inertia about the CG (assumed uniform block 120 by 60 by 80 mm): Ixx = 1.667e-3 kg m^2, Iyy = 3.467e-3 kg m^2, Izz = 3.000e-3 kg m^2. Coupled to the four M4 bolt holes by a distributing coupling (Lagrange multipliers), which transmits both forces and moments but does not stiffen the web face.</p>
+<p><strong>Boundary condition.</strong> The four base bolt holes on the flange underside are rigidly coupled to reference nodes, which are fixed: the fixed-base idealisation, representing the panel to which the bracket is bolted. This is stiffer than a real panel with screw holes and fasteners; it is the standard qualification assumption and is stated as a licence limitation. The final design uses four A286 160 ksi M6 bolts in 6.5 mm holes with 12 mm washers (r_wash = 6.0 mm); the original specification and the Phase 2 gate used M5 bolts in 5.5 mm holes with 10 mm washers (r_wash = 5.0 mm), changed by ruling R-7 once the joint model showed two negative M5 margins (Section 4.5). The base holes are the only geometry difference between the M5 and M6 models; the web, flange and fillet are unchanged.</p>
+<p><strong>GEVS environment (one-sided ASD, TRACED, machine-readable form from P7_SOURCES.md).</strong></p>
+<pre><code>frequency_Hz,ASD_g2_per_Hz
+20,0.026
+50,0.16
+800,0.16
+2000,0.026
+</code></pre>
+<p>Overall 14.1 Grms (TRACED). Linear interpolation on a log-log scale between breakpoints. ASD entered to Abaqus as the measured A g^2/Hz times 9.80665^2 = 96.17, giving (m/s^2)^2/Hz, with no <code>*PSD-DEFINITION</code> G parameter used.</p>
+<p><strong>Mesh and elements, ladder DOF per rung.</strong> Quadratic solid elements C3D10 (10-node tetrahedral). Three-rung ladder: 4.8 mm seed (baseline 142,209 DOF, final design 150,651 DOF), 2.4 mm seed (baseline 357,615 DOF, final design 378,066 DOF), 1.6 mm seed, production (baseline 983,688 DOF, final design 1,060,857 DOF). The 1.6 mm rung is used for qualification, with at least 4 elements through the 6 mm thickness. A 1.2 mm rung was built for the final design on the M5 (V-A) geometry (P7_FA12, 2,298,576 DOF) and, in Phase 2b, launched out-of-core; see Section 3.3.</p>
+<p><strong>Modal analysis.</strong> <code>*FREQUENCY</code> step, Lanczos eigenvalue solver, modes to 3000 Hz. Seven modes retained (all phases). Effective mass computed by Abaqus per axis in the frequency-step output. Final design mode table, M5 geometry, 1.6 mm rung (the mesh on which V1, V1b and the detailed effective-mass and Miles breakdowns were run; the M6 final design's own modes are given in Section 3.3 to 3.6):</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>f (Hz)</th>
+<th>EM X (kg)</th>
+<th>EM Y (kg)</th>
+<th>EM Z (kg)</th>
+<th>Motion</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>101.47</td>
+<td>0.000</td>
+<td>0.990</td>
+<td>0.727</td>
+<td>box pitch, couples Y and Z</td>
+</tr>
+<tr>
+<td>2</td>
+<td>279.55</td>
+<td>0.589</td>
+<td>0.000</td>
+<td>0.000</td>
+<td>X plus yaw</td>
+</tr>
+<tr>
+<td>3</td>
+<td>679.17</td>
+<td>0.979</td>
+<td>0.000</td>
+<td>0.000</td>
+<td>X plus roll</td>
+</tr>
+<tr>
+<td>4</td>
+<td>824.76</td>
+<td>0.000</td>
+<td>1.015</td>
+<td>0.109</td>
+<td>Y plus pitch</td>
+</tr>
+<tr>
+<td>5</td>
+<td>1368.5</td>
+<td>0.000</td>
+<td>0.184</td>
+<td>1.423</td>
+<td>Z</td>
+</tr>
+<tr>
+<td>6</td>
+<td>2792.2</td>
+<td>0.668</td>
+<td>0.000</td>
+<td>0.000</td>
+<td>X residual carrier</td>
+</tr>
+<tr>
+<td>7</td>
+<td>2904.8</td>
+<td>0.001</td>
+<td>0.001</td>
+<td>0.000</td>
+<td>local</td>
+</tr>
+</tbody>
+</table>
+<p>Total mass 2.3677 kg (bracket 0.3677 with M5 holes, box 2.000 kg).</p>
+<p><strong>Random response.</strong> <code>*RANDOM RESPONSE</code> step, base motion excitation (<code>*BASE MOTION</code>, absolute acceleration), one-sided PSD input in (m/s^2)^2/Hz. Excitations X, Y and Z run as separate steps. Damping <code>*MODAL DAMPING</code> with viscous fraction 1/(2Q): Q = 10 corresponds to 0.05 critical damping; Q = 20 corresponds to 0.025 critical damping. Output frequency span 20 to 2000 Hz at 40 points per mode interval and bias 3 (the bracket's setting). V4 (Section 3.1) validates the engine to within 2 percent.</p>
+<p><strong>3-sigma convention.</strong> The random-response output PSD is integrated over frequency to give RMS (total RMS acceleration at the box, base reaction forces). The limit-load acceleration is 3 times the RMS, termed the 3-sigma value. Stress is computed from the 3-sigma input by modal superposition in post-processing, and the continuum margin of safety is stress / (Fty / 1.25) - 1 for yield, stress / (Ftu / 1.40) - 1 for ultimate.</p>
+<p><strong>Post-processing: true RMS von Mises and the base reaction (DECISIONS section 11).</strong> Abaqus writes <code>RS</code>, the RMS of each stress component, but offers no von Mises invariant for it, because the Mises of the RMS components is not the RMS of von Mises once the components lose their signs. Every von Mises number in this report is instead the true one, from the modal stress covariance: E[vm^2] = sum over mode pairs of C_kl (sigma_k^T A sigma_l), with sigma_k the mass-normalised modal stresses from the frequency step, C_kl the cross-PSD integral of the two modal transfer functions against the base ASD on a 40001-point log grid, and A the von Mises quadratic form. At every peak this true value matches Abaqus <code>RS</code> to within 0.6 percent. The RMS base reaction is unavailable directly, since Abaqus gives no <code>RF</code> or <code>RRF</code> in a SIM-based random response; it is instead computed by the same modal superposition and excludes modes above 3000 Hz.</p>
+<p><strong>Solves and wall time.</strong> Phase 1 used 7 of the cap: V4_SDOF, three mesh-ladder rungs (P7_M1 to P7_M3), a pipeline dry run (P7_Q1), the fine-rung qualification (P7_Q3) and the V6 static check, 1,473 s (24.6 min) total solver wall time. Phase 2 used 8 more, solves 8 to 15, all at cpus = 2 because a concurrent long-running job held most of the machine:</p>
+<table>
+<thead>
+<tr>
+<th>Job</th>
+<th>Solve</th>
+<th>Purpose</th>
+<th>Wall time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P7_R24</td>
+<td>8</td>
+<td>R-3(a): baseline 2.4 mm with stress output</td>
+<td>57 s</td>
+</tr>
+<tr>
+<td>P7_R16L, attempt 1</td>
+<td>9</td>
+<td>R-3(a): baseline 1.6 mm + 0.6 mm local seed</td>
+<td>466 s (failed, memory)</td>
+</tr>
+<tr>
+<td>P7_R16L, retry</td>
+<td>10</td>
+<td>same, 0.7 mm seed after a targeted fix</td>
+<td>498 s</td>
+</tr>
+<tr>
+<td>P7_VA</td>
+<td>11</td>
+<td>variant V-A selection (tw 7, tf 6)</td>
+<td>260 s</td>
+</tr>
+<tr>
+<td>P7_FA48</td>
+<td>12</td>
+<td>final design, mesh ladder, 4.8 mm</td>
+<td>27 s</td>
+</tr>
+<tr>
+<td>P7_FA24</td>
+<td>13</td>
+<td>final design, mesh ladder, 2.4 mm</td>
+<td>79 s</td>
+</tr>
+<tr>
+<td>P7_FQ</td>
+<td>14</td>
+<td>final design qualification, 1.6 mm</td>
+<td>616 s</td>
+</tr>
+<tr>
+<td>P7_FS</td>
+<td>15</td>
+<td>final design static, V6 plus joint loads</td>
+<td>370 s</td>
+</tr>
+</tbody>
+</table>
+<p>Phase 2 total: 2,373 s (39.6 min). Phase 2b used 11 more, solves 16 to 26 of the cap of 14 (raised from 10 by ruling R-13 to cover the M6 preload lever, R-12):</p>
+<table>
+<thead>
+<tr>
+<th>Job</th>
+<th>Solve</th>
+<th>Purpose</th>
+<th>Wall time</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P7_FA12, attempt 1 (failed, memory)</td>
+<td>16</td>
+<td>R-9: 1.2 mm rung</td>
+<td>470 s</td>
+</tr>
+<tr>
+<td>P7_FA12, retry</td>
+<td>17</td>
+<td>R-9: 1.2 mm rung, fixed (4 eigenvalues requested)</td>
+<td>1,250 s</td>
+</tr>
+<tr>
+<td>P7_BM24</td>
+<td>18</td>
+<td>R-10: box-mount footprint, 2.4 mm with modal stress</td>
+<td>73 s</td>
+</tr>
+<tr>
+<td>P7_BM, attempt 1 (failed, memory)</td>
+<td>19</td>
+<td>R-10: refined mesh</td>
+<td>342 s</td>
+</tr>
+<tr>
+<td>P7_BM, retry (rejected, modelling error)</td>
+<td>20</td>
+<td>R-10: refined mesh, uniform box-coupling weights</td>
+<td>576 s</td>
+</tr>
+<tr>
+<td>P7_BM2</td>
+<td>21</td>
+<td>R-10: refined mesh, per-footprint weights fixed</td>
+<td>567 s</td>
+</tr>
+<tr>
+<td>P7_JMIN</td>
+<td>22</td>
+<td>R-6: M5 joint model, P_min</td>
+<td>11,768 s</td>
+</tr>
+<tr>
+<td>P7_JMAX</td>
+<td>23</td>
+<td>R-6: M5 joint model, P_max</td>
+<td>11,194 s</td>
+</tr>
+<tr>
+<td>P7_J6MAX, resubmitted after the power loss</td>
+<td>24</td>
+<td>R-7: M6 joint model, P_max, cpus=8</td>
+<td>8,420 s</td>
+</tr>
+<tr>
+<td>P7_M6Q</td>
+<td>25</td>
+<td>R-7: M6 modal check and random rerun</td>
+<td>852 s</td>
+</tr>
+<tr>
+<td>P7_J6MIN</td>
+<td>26</td>
+<td>R-7: M6 joint model, P_min</td>
+<td>about 21,900 s (still running at close)</td>
+</tr>
+</tbody>
+</table>
+<p>Two first attempts failed on memory and were retried once each with a targeted fix (P7_FA12, P7_BM); one completed run (P7_BM) was rejected as a modelling error, not a solver failure (DECISIONS 17.5a); no job failed twice. The power loss at about 05:20 (ruling R-14) that killed the first P7_J6MAX attempt, are not counted against the solve cap. Phase 2b wall time: about 57,400 s (15.9 h), all at cpus=2 except the resubmitted P7_J6MAX at cpus=8. <strong>Cumulative, all three phases: 26 solves, about 61,250 s (17.0 h).</strong></p>
+<h2>3. Validation</h2>
+<h3>3.1 V4, the random-response engine check against an exact SDOF integral</h3>
+<p>This is the key check: it validates the solver's random-response pipeline (<code>*RANDOM RESPONSE</code>, PSD definition, damping and output conventions) against an exact answer, not against another approximation. It is geometry-independent and was run once, in Phase 1, and carried unchanged through every later phase.</p>
+<p><strong>Method.</strong> A single-degree-of-freedom spring-mass oscillator is modelled in Abaqus: a rigid mass of 1.0 kg on a spring giving a natural frequency of 200 Hz, viscous fraction 0.05 (Q = 10), subjected to the same GEVS ASD. The exact RMS acceleration is computed by numerical integration of the transmissibility squared times the ASD over frequency (numpy, trapezoidal rule on a dense log grid).</p>
+<p><strong>Result.</strong> Exact absolute-acceleration RMS 22.404 g; exact relative-acceleration RMS 26.302 g, 17 percent higher, confirming the two are genuinely different quantities for this ASD. Abaqus <code>RTA</code> (absolute, 40 points per mode interval, bias 3) gives 22.448 g, +0.20 percent above the exact absolute integral, inside the 2 percent band. At 200 points per interval Abaqus gives 22.410 g, +0.03 percent.</p>
+<p><strong>Conventions settled by V4 (DECISIONS section 8).</strong> The ASD is entered as (m/s^2)^2/Hz, one-sided, per Hz, with no G parameter; <code>*MODAL DAMPING, VISCOUS=FRACTION OF CRITICAL DAMPING</code> is read as the true fraction of critical damping, not a percentage. <code>RTA</code> and not <code>RA</code> is the quantity to compare against Miles and against shaker control.</p>
+<h3>3.2 V1, the first mode against the closed form, and why it missed</h3>
+<p><strong>Reference closed form.</strong> A clamped Euler-Bernoulli cantilever strip (width b = 120 mm, thickness tw, E = 68.9 GPa) of length L = 49 mm, from the top of the flange to the centroid of the box-mount holes. The tip carries the box as a rigid body: translational mass m_box + 0.2357 m_web(L), and rotary inertia J = J_cg + m_box e^2 with e = 33 mm. Stiffness K = EI/L^3 [[12, -6L], [-6L, 4L^2]]; the first root of det(K - w^2 M) = 0 is the V1 reference.</p>
+<p><strong>Phase 1 baseline (tw = tf = 6 mm).</strong> FE first mode 91.08 Hz. Closed form 122.08 Hz, +34.0 percent above FE. Band 10 percent, declared before any run. Verdict FAIL, bias direction as predicted.</p>
+<p><strong>Final design (tw = 7 mm, M5 geometry).</strong> FE first mode 101.47 Hz. Closed form re-evaluated at the new web thickness: 152.84 Hz, +50.6 percent above FE. <strong>Verdict: FAIL, and this stays in the record unchanged</strong>; V1b (Section 3.7) explains the gap but does not reclassify V1.</p>
+<p><strong>Why V1 fails, and why the band was not widened.</strong> The flange strip between the web root and the inner bolt row (Y = 22 mm) acts as a rotational spring at the web root, and the clamped closed form has no term for it. On the final design this root motion carries 78 percent of the total box displacement in mode 1, so a closed form that ignores it is missing most of the compliance, not a correction term. The band (10 percent) was declared before the first solve and is not retuned after a fail: the mechanism, not the number, is what gets investigated.</p>
+<p>This comparison uses the V-A FE value on the M5 mesh (101.47 Hz), the geometry on which V1 and V1b were both graded before the base bolt was changed to M6 (Section 4.5); M6 only enlarges the rigid base footprint and does not change the web, flange or fillet that V1 and V1b model.</p>
+<h3>3.3 V2, mesh convergence</h3>
+<p><strong>Phase 1 ladder (baseline).</strong></p>
+<table>
+<thead>
+<tr>
+<th>Seed (mm)</th>
+<th>DOF</th>
+<th>f1 (Hz)</th>
+<th>f2 (Hz)</th>
+<th>f3 (Hz)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4.8</td>
+<td>142,209</td>
+<td>91.789</td>
+<td>234.10</td>
+<td>634.53</td>
+</tr>
+<tr>
+<td>2.4</td>
+<td>357,615</td>
+<td>91.377</td>
+<td>233.57</td>
+<td>627.77</td>
+</tr>
+<tr>
+<td>1.6</td>
+<td>983,688</td>
+<td>91.081</td>
+<td>233.84</td>
+<td>621.02</td>
+</tr>
+<tr>
+<td>change, 2.4 to 1.6 mm</td>
+<td></td>
+<td>-0.32 %</td>
+<td>+0.12 %</td>
+<td>-1.08 %</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Final design ladder (V-A, M5 geometry).</strong></p>
+<table>
+<thead>
+<tr>
+<th>Seed (mm)</th>
+<th>DOF</th>
+<th>f1 (Hz)</th>
+<th>f2 (Hz)</th>
+<th>f3 (Hz)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4.8</td>
+<td>150,651</td>
+<td>102.48</td>
+<td>279.77</td>
+<td>694.90</td>
+</tr>
+<tr>
+<td>2.4</td>
+<td>378,066</td>
+<td>101.95</td>
+<td>279.26</td>
+<td>686.92</td>
+</tr>
+<tr>
+<td>1.6</td>
+<td>1,060,857</td>
+<td>101.47</td>
+<td>279.55</td>
+<td>679.17</td>
+</tr>
+<tr>
+<td>change, 2.4 to 1.6 mm</td>
+<td></td>
+<td>-0.47 %</td>
+<td>+0.10 %</td>
+<td>-1.13 %</td>
+</tr>
+</tbody>
+</table>
+<p>On this three-rung comparison mode 3 still moves -1.13 percent, outside the 1 percent band, the same slow-converging behaviour as Phase 1 (attributed to the rigid-footprint clamp edges this mode loads directly). This comparison is not, however, the one V2 is finally graded on: R-9 required the 1.2 mm rung.</p>
+<p><strong>V2 grade (R-9): the 1.2 mm rung.</strong> The 1.2 mm rung (P7_FA12, V-A/M5 geometry, 2,298,576 DOF) failed once on memory in Phase 2b (a blank eigenvalue count sized the Lanczos solver for 12,508 eigenvalues) and was retried with one targeted fix, 4 eigenvalues requested explicitly; the retry ran out-of-core in 1,250 s.</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>1.6 mm</th>
+<th>1.2 mm</th>
+<th>Change</th>
+<th>Band &lt; 1 %</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>101.47 Hz</td>
+<td>101.33 Hz</td>
+<td>-0.14 %</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>2</td>
+<td>279.55 Hz</td>
+<td>278.61 Hz</td>
+<td>-0.34 %</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>3</td>
+<td>679.17 Hz</td>
+<td>677.62 Hz</td>
+<td>-0.23 %</td>
+<td>PASS</td>
+</tr>
+</tbody>
+</table>
+<p><strong>V2: PASS</strong>, on the two finest rungs, band unchanged. The mode 3 change here (-0.23 percent) is about five times smaller than the 2.4 to 1.6 mm change (-1.13 percent), showing the ladder is converging; the two-finest-rung comparison is the graded one, and on it every mode passes. <strong>f1 at 1.2 mm = 101.33 Hz, at or above the 100 Hz requirement: the requirement holds on the converged mesh</strong>, so V-B (an 8 mm flange) was not triggered. The 1.2 mm rung was run on the M5 geometry, before the M6 bolt change; M6 only enlarges the rigid base footprint, which stiffens the bracket further (Section 4.5), so <strong>101.33 Hz is a lower bound for the final M6 design</strong>, whose own 1.6 mm value is 104.41 Hz. The 1.2 mm rung was not rerun on the M6 geometry (DECISIONS 17.13). Figure <code>figures/fig_mesh_ladder_final.png</code> (redrawn with the 1.2 mm rung).</p>
+<h3>3.4 V3, modal effective mass</h3>
+<p>Effective mass per axis is calculated by Abaqus in the frequency step and output in the <code>.dat</code> file. The residual mass, modes above 2000 Hz plus the static residual, is represented by the quasi-static response in the random steps rather than by direct capture.</p>
+<p><strong>M5 geometry, to 2000 Hz:</strong> X 66.3 percent (mode 2 at 279.55 Hz with 0.589 kg and mode 3 at 679.17 Hz with 0.979 kg, out of 2.3677 kg total), Y 92.5 percent, Z 95.4 percent. Mode 6, at 2792.2 Hz, carries 0.668 kg of X effective mass and lies above the excitation band, acting as the residual carrier for X; retaining it raises the X capture to 94.5 percent, meeting the 90 percent band through the residual clause. Verdict PASS: Y and Z directly, X through the residual clause.</p>
+<p><strong>On the M6 geometry, the final design</strong>, the same check gives X 66.4 percent to 2000 Hz and 94.2 percent through the residual mode (now shifted to 2863.4 Hz with the stiffer base footprint), Y 92.5 percent, Z 95.3 percent (RESULTS_LOG.md). The mechanism is unchanged in kind; only the residual carrier's own frequency moves with the base stiffness. <strong>PASS</strong>, as before.</p>
+<h3>3.5 V5, Miles' equation</h3>
+<p><strong>V5a: Miles vs exact SDOF integral at dominant modes.</strong> For each axis the dominant mode (largest effective mass to 2000 Hz) is identified, Miles' equation gives the RMS acceleration at that frequency under the local ASD, and the exact SDOF integral is computed at the same frequency. Band: Miles within 10 percent of exact.</p>
+<table>
+<thead>
+<tr>
+<th>Axis</th>
+<th>Mode</th>
+<th>Frequency (Hz)</th>
+<th>Exact SDOF (g)</th>
+<th>Miles (g)</th>
+<th>Difference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>first mode</td>
+<td>1</td>
+<td>101.47</td>
+<td>15.857</td>
+<td>15.969</td>
+<td>+0.71 %</td>
+</tr>
+<tr>
+<td>X, dominant</td>
+<td>3</td>
+<td>679.17</td>
+<td>41.167</td>
+<td>41.315</td>
+<td>+0.36 %</td>
+</tr>
+<tr>
+<td>Y, dominant</td>
+<td>4</td>
+<td>824.76</td>
+<td>43.664</td>
+<td>44.173</td>
+<td>+1.16 %</td>
+</tr>
+<tr>
+<td>Z, dominant</td>
+<td>5</td>
+<td>1368.5</td>
+<td>36.938</td>
+<td>34.440</td>
+<td>-6.76 %</td>
+</tr>
+</tbody>
+</table>
+<p>All four cases pass the 10 percent band (M5 geometry). On the M6 final design the same four checks give +0.67, +0.84, +0.91, -7.49 percent (RESULTS_LOG.md), all within band. <strong>Verdict V5a PASS</strong>, both bolt sizes.</p>
+<p><strong>V5b: box RMS vs Miles on the dominant mode, and why Miles overpredicts here.</strong> In reality two modes share the effective mass in every axis, and the box motion is the combination of both, each contributing less than its own full Miles value.</p>
+<table>
+<thead>
+<tr>
+<th>Axis</th>
+<th>Mode (f)</th>
+<th>Effective mass (kg)</th>
+<th>Ratio to that mode's own Miles value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>X</td>
+<td>2 (233.8 Hz)</td>
+<td>0.615</td>
+<td>0.36</td>
+</tr>
+<tr>
+<td>X</td>
+<td>3 (621.0 Hz)</td>
+<td>0.918</td>
+<td>0.42</td>
+</tr>
+<tr>
+<td>Y</td>
+<td>1 (91.1 Hz)</td>
+<td>0.948</td>
+<td>0.60</td>
+</tr>
+<tr>
+<td>Y</td>
+<td>4 (702.6 Hz)</td>
+<td>1.054</td>
+<td>0.49</td>
+</tr>
+<tr>
+<td>Z</td>
+<td>1 (91.1 Hz)</td>
+<td>0.717</td>
+<td>0.48</td>
+</tr>
+<tr>
+<td>Z</td>
+<td>5 (1243 Hz)</td>
+<td>1.390</td>
+<td>0.57</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Axis</th>
+<th>Dominant-mode Miles (g)</th>
+<th>Actual box RMS, Q10 (g)</th>
+<th>Difference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>X</td>
+<td>41.32 (mode 3)</td>
+<td>20.56</td>
+<td>-50.2 %</td>
+</tr>
+<tr>
+<td>Y</td>
+<td>44.17 (mode 4)</td>
+<td>22.16</td>
+<td>-49.8 %</td>
+</tr>
+<tr>
+<td>Z</td>
+<td>34.44 (mode 5)</td>
+<td>22.82</td>
+<td>-33.7 %</td>
+</tr>
+</tbody>
+</table>
+<p>Band: box RMS within 25 percent of Miles on the dominant mode. All three cases fail by 34 to 50 percent (M5 geometry), and on the M6 final design the same comparison gives -51.1, -48.7, -33.3 percent, essentially unchanged. <strong>Verdict V5b FAIL, both bolt sizes, expected and explained, no band change.</strong></p>
+<h3>3.6 V6, load-path sanity</h3>
+<p><strong>Method.</strong> A quasi-static load equal to 3 times the RMS in-axis base reaction (in equivalent g) is applied to the bracket and box as a uniform inertia load. The hand beam-bending stress is computed at the web root section as M c / I; the FE width-averaged normal stress (S33, at Z = 13 mm, the first section clear of the fillet) is compared.</p>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Applied load (g)</th>
+<th>Hand M c / I (MPa)</th>
+<th>FE S33 at Z = 13 mm (MPa)</th>
+<th>Difference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>V6 static, Y</td>
+<td>132.52</td>
+<td>122.77</td>
+<td>124.40</td>
+<td>+1.3 %</td>
+</tr>
+</tbody>
+</table>
+<p>Band: within 20 percent. <strong>Verdict PASS.</strong> This check uses the V-A/M5 geometry; the web root section it examines is unchanged by the M6 base-hole change (HANDOFF.md Phase 2b verdict table), so the result carries over unchanged to the final design.</p>
+<h2>4. Qualification and the design iteration</h2>
+<h3>4.1 The baseline fails the first-mode requirement</h3>
+<p>The Phase 1 baseline bracket (web 6 mm, flange 6 mm, no gussets) has a first mode of 91.08 Hz, below the 100 Hz requirement, a shortfall of 8.9 percent. Against the traced GEVS baseline of 50 Hz (lateral) and 70 Hz (thrust) the bracket passes comfortably. The declared requirement is 100 Hz and is binding (R-1).</p>
+<p><strong>R-1 sentence (from HANDOFF.md section (b), verbatim):</strong> "The baseline at 91.1 Hz fails the declared 100 Hz design requirement; it would satisfy the lower traced GEVS figures of 50 Hz (lateral) and 70 Hz (thrust)."</p>
+<p>The 100 Hz value is ASSUMPTION in P7_SOURCES (row 2c), aerospace design practice for decoupling margin. It is kept as declared; there is no moving of the goalposts after the baseline fails.</p>
+<h3>4.2 The stiffening iteration</h3>
+<p><strong>Variants declared and run (Phase 2).</strong> Three levers, in the order R-1 prescribes: web thickness first, then flange thickness at the root, then end gussets. Acceptance criterion (DECISIONS 13.2): first mode at the finest rung run at or above 100.0 Hz is binding; a 1 percent selection gate at 1.6 mm (f1 &gt;= 101.0 Hz) covers the expected mesh-ladder drift.</p>
+<table>
+<thead>
+<tr>
+<th>Variant</th>
+<th>tw (mm)</th>
+<th>tf (mm)</th>
+<th>Bracket mass (kg)</th>
+<th>Change (kg)</th>
+<th>f1 predicted (Hz)</th>
+<th>f1 FE (Hz)</th>
+<th>Gate 101.0 Hz</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Baseline</td>
+<td>6</td>
+<td>6</td>
+<td>0.3374</td>
+<td>0</td>
+<td></td>
+<td>91.08</td>
+<td>no</td>
+</tr>
+<tr>
+<td><strong>V-A (selected)</strong></td>
+<td>7</td>
+<td>6</td>
+<td>0.3677</td>
+<td>+0.0303</td>
+<td>101.9</td>
+<td><strong>101.47</strong></td>
+<td><strong>yes</strong></td>
+</tr>
+<tr>
+<td>V-B (not run)</td>
+<td>7</td>
+<td>8</td>
+<td>0.4145 (predicted)</td>
+<td>+0.0771</td>
+<td>103.3 to 126.3</td>
+<td>not needed</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Prediction method.</strong> The Phase 1 closed form is treated as the web-only compliance; the remaining Phase 1 compliance is the root compliance, held constant for the V-A prediction. Result: predicted 101.9 Hz, declared bias "slightly low". For V-B, if run, the root compliance would instead scale with the flange-strip bending stiffness.</p>
+<p><strong>Result.</strong> V-A is selected. FE f1 = 101.47 Hz at 1.6 mm, passing the 101.0 Hz gate by 0.47 percent. V-B and V-C were not run because they were not needed. This selection fixed the frequency requirement; it is independent of the base bolt size, which was decided later, in Phase 2b, on joint grounds (Section 4.5).</p>
+<h3>4.3 Responses and continuum margins</h3>
+<p><strong>Qualification table, final design, V-A with M6 bolts, 1.6 mm rung, d = 3.0 mm from the base washer edge, box-mount footprints excluded (d_box = 0, Section 4.4).</strong></p>
+<table>
+<thead>
+<tr>
+<th>Case</th>
+<th>Box RMS in-axis (g)</th>
+<th>Base reaction RMS in-axis (N)</th>
+<th>Design 3-sigma von Mises (MPa)</th>
+<th>Location (mm)</th>
+<th>MS yield / ult</th>
+<th>V-A with M5 (pre-R-7)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>X, Q10</td>
+<td>20.97</td>
+<td>469</td>
+<td>46.8</td>
+<td>fillet root (13.4, 7.3, 8.8)</td>
+<td>+3.10 / +3.42</td>
+<td>+2.98</td>
+</tr>
+<tr>
+<td>Y, Q10</td>
+<td>22.57</td>
+<td>488</td>
+<td>85.0</td>
+<td>flange (14.1, 13.0, 0.8)</td>
+<td>+1.26 / +1.44</td>
+<td>+1.24</td>
+</tr>
+<tr>
+<td>Z, Q10</td>
+<td>22.11</td>
+<td>523</td>
+<td>72.7</td>
+<td>flange (14.1, 13.0, 0.8)</td>
+<td>+1.64 / +1.85</td>
+<td>+1.60</td>
+</tr>
+<tr>
+<td>X, Q20</td>
+<td>28.86</td>
+<td>637</td>
+<td>66.4</td>
+<td>fillet root</td>
+<td>+1.89 / +2.12</td>
+<td>+1.81</td>
+</tr>
+<tr>
+<td><strong>Y, Q20</strong></td>
+<td>31.84</td>
+<td>682</td>
+<td><strong>121.0</strong></td>
+<td>flange (14.1, 13.0, 0.8)</td>
+<td><strong>+0.59 / +0.71</strong></td>
+<td>+0.57</td>
+</tr>
+<tr>
+<td>Z, Q20</td>
+<td>30.00</td>
+<td>706</td>
+<td>103.3</td>
+<td>flange</td>
+<td>+0.86 / +1.01</td>
+<td>+0.83</td>
+</tr>
+</tbody>
+</table>
+<p>Worst margin: Y at Q = 20, MS yield +0.59, MS ultimate +0.71. The M6 design point sits 9.0 mm from the bolt 1 axis, on the edge of the singular zone (6.0 mm washer radius plus the 3.0 mm rule, Section 4.4); the M6 values run slightly above the M5 design's own restated margins (last column) because the larger rigid footprint stiffens the local field the same way it stiffens the first mode. Every continuum margin is positive, on both bolt sizes.</p>
+<p>Against the Phase 1 baseline (narrower d = 1.5 mm exclusion, Section 4.4), the worst continuum yield margin rises from +0.21 to +0.59, from the same stiffening and singularity-rule corrections that fixed the first mode; no margin was tuned specifically to pass.</p>
+<p>Damping sensitivity: at Y, halving the amplification from Q = 20 to Q = 10 raises the margin from +0.59 to +1.26, because RMS accelerations scale roughly with the square root of Q. This sensitivity is reported at every location, not only the worst one.</p>
+<h3>4.4 The washer-edge singularity, the continuum rule, and the box-mount footprint (R-10)</h3>
+<p><strong>R-3(a): base singularity demonstration.</strong> The flange underside at the rigid washer footprint is an elastic singularity: the integration-point peak keeps rising with every mesh refinement and never converges, while the field a few millimetres away converges cleanly. True RMS von Mises (MPa), baseline geometry, Y excitation, Q = 10, along the direction of the Phase 1 peak on the flange underside (<code>figures/fig_singularity.png</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Mesh at the washer edge</th>
+<th>IP peak (singular)</th>
+<th>s = 0</th>
+<th>1.0</th>
+<th>1.5</th>
+<th>2.0</th>
+<th>3.0</th>
+<th>4.0 mm</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4.8 mm</td>
+<td>70.8</td>
+<td>92.6</td>
+<td>55.9</td>
+<td>50.1</td>
+<td>47.4</td>
+<td>26.3</td>
+<td>24.8</td>
+</tr>
+<tr>
+<td>2.4 mm</td>
+<td>86.4</td>
+<td>101.0</td>
+<td>56.0</td>
+<td>43.8</td>
+<td>33.7</td>
+<td>28.8</td>
+<td>24.9</td>
+</tr>
+<tr>
+<td>1.6 mm</td>
+<td>123.5</td>
+<td>159.3</td>
+<td>89.2</td>
+<td>35.9</td>
+<td>31.9</td>
+<td>27.3</td>
+<td>24.8</td>
+</tr>
+<tr>
+<td>1.6 mm + local 0.7 mm seed</td>
+<td>192.6</td>
+<td>242.2</td>
+<td>42.4</td>
+<td>33.1</td>
+<td>30.0</td>
+<td>26.5</td>
+<td>24.6</td>
+</tr>
+<tr>
+<td>two finest, difference</td>
+<td>+56 %</td>
+<td></td>
+<td>+110 %</td>
+<td>+8.3 %</td>
+<td>+6.2 %</td>
+<td>+3.2 %</td>
+<td>+0.9 %</td>
+</tr>
+</tbody>
+</table>
+<p>The peak rises through 70.8, 86.4, 123.5 and 192.6 MPa RMS over the four meshes and does not converge. Farther out the field converges: the two finest meshes agree within 3.2 percent at s = 3.0 mm and 0.9 percent at s = 4.0 mm; at s = 1.5 mm they still differ by 8.3 percent, so the Phase 1 exclusion band of 1.5 mm was too narrow.</p>
+<p><strong>R-3(b) rule applied: d = 3.0 mm.</strong> The design stress is the peak 3-sigma von Mises at or beyond 3.0 mm from the base washer footprint edge, the smallest tabulated distance at which the two finest meshes agree within 5 percent, holding at every larger distance. The singular zone of each base bolt is the flange within r = 5.0 + 3.0 = 8.0 mm of the bolt axis (M5).</p>
+<p><strong>R-10: the box-mount footprint is also singular.</strong> The lower box-mount footprint, a distributing coupling rather than a rigid patch, is where the Y-case design stress sits (Section 4.3); R-10 asked whether it too needed exclusion. Method as R-3(a): three meshes (2.4 mm, 1.6 mm, and 1.6 mm with a 0.7 mm local seed within r = 9 mm of the hole), Y excitation, Q = 10, true RMS von Mises.</p>
+<table>
+<thead>
+<tr>
+<th>RMS von Mises (MPa)</th>
+<th>2.4 mm</th>
+<th>1.6 mm</th>
+<th>refined</th>
+<th>two finest</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IP peak, footprint zone</td>
+<td>29.35</td>
+<td>31.20</td>
+<td>34.20</td>
+<td><strong>+9.6 %</strong></td>
+</tr>
+<tr>
+<td>surface at the design-point radius (r = 2.42 mm)</td>
+<td>31.36</td>
+<td>30.09</td>
+<td>30.21</td>
+<td>+0.4 %</td>
+</tr>
+<tr>
+<td>s = 1.0 / 2.0 / 3.0 / 4.0 mm outside the footprint edge</td>
+<td>15.24 / 15.25 / 14.48 / 14.27</td>
+<td>16.07 / 15.03 / 14.63 / 14.41</td>
+<td>15.56 / 14.95 / 14.59 / 14.36</td>
+<td>-3.2 / -0.5 / -0.3 / -0.3 %</td>
+</tr>
+</tbody>
+</table>
+<p>The peak keeps rising with refinement (+6.3 percent, then +9.6 percent) and moves to the hole edge of the footprint, where the coupling load meets the free bore: a weak singularity, by the same declared rule as R-3(a). <strong>d_box = 0: the footprint itself (r &lt;= 4.5 mm) is the singular zone</strong>, since the two finest meshes already agree within 5 percent at s = 0. A modelling pitfall was found and fixed along the way: the first refined run (P7_BM) gave a mode 2 of 310.26 Hz against 279.55 Hz at 1.6 mm, because the box coupling used uniform node weights across the four screw-head footprints, so refining one footprint's mesh silently shifted 64 percent of the box load onto it. The rerun (P7_BM2), with each footprint weighted to keep its 1.6 mm share of the box load, reproduced the 1.6 mm modes (101.48, 279.16, 679.27 Hz) and is the valid comparison (DECISIONS 17.5a).</p>
+<p>Restated Y margins (base zone and box-mount footprint both excluded): Q10 +1.24 / +1.42, <strong>Q20 +0.57 / +0.70</strong> for V-A with M5 (Phase 2, footprint kept: +0.45 / +0.56); the corresponding M6 value is +0.59 / +0.71 (Section 4.3). <strong>Worst continuum margin on the final design: +0.59 on yield (Y, Q20).</strong> For information only, the converged surface value at the old (pre-R-10) design point would give +0.49 on the M5 geometry; the margin is positive either way. Figure <code>figures/fig_boxmount_sensitivity.png</code>.</p>
+<p><strong>Deviation, disclosed (DECISIONS 17.13).</strong> The d = 3.0 mm rule was demonstrated on the M5 base footprint (r_wash = 5.0 mm); <strong>it is applied to the larger M6 footprint (r_wash = 6.0 mm) without a new singularity study.</strong> The M6 design point lies on the edge of that zone, 9.0 mm from the bolt axis. The bias is that at 3 mm from a rigid edge the R-3(a) field had already converged to within 3 percent, and the M6 edge is the same kind of singularity, so the value should be within a few percent of a properly refined result; this was not independently checked by refining the M6 mesh.</p>
+<h3>4.5 The bolted joint as a joint (R-6, R-7, R-11)</h3>
+<p>Phase 2 checked the joint with a hand prying calculation (a rigid-footprint reaction moment resolved over an assumed 5 mm lever arm) and found negative margins at the inner bolts: bolt tension yield -0.05, separation -0.40, and friction slip negative at every bolt (Q = 20). A review ruled that Phase 2 was not complete, since the approved plan treats a negative joint margin the same as a failed frequency: it triggers a design iteration, not closure with an open item. R-6 replaced the hand calculation with a nonlinear FE joint model; R-7 then changed the bolt size once that model confirmed two negative M5 margins.</p>
+<p><strong>Joint inputs, traced first (R-5, P7_SOURCES.md rows 9a to 9x).</strong> Sixteen of twenty-four rows TRACED, seven SECONDARY, one ASSUMPTION; declared in DECISIONS 17.3 before the first joint solve, so nothing here was fit to the results.</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>M5</th>
+<th>M6</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bolt</td>
+<td>A286 160 ksi class</td>
+<td></td>
+<td>design</td>
+</tr>
+<tr>
+<td>Ftu</td>
+<td>1103 MPa</td>
+<td></td>
+<td>TRACED (9i)</td>
+</tr>
+<tr>
+<td>Fty</td>
+<td>772 MPa (0.70 Ftu)</td>
+<td></td>
+<td>ASSUMPTION (9j), lower than Phase 2's 827 MPa hand value, conservative</td>
+</tr>
+<tr>
+<td>Fsu</td>
+<td>662 MPa (0.60 Ftu)</td>
+<td></td>
+<td>ASSUMPTION (9k)</td>
+</tr>
+<tr>
+<td>Tensile stress area A_t</td>
+<td>14.18 mm^2</td>
+<td>20.12 mm^2</td>
+<td>TRACED (9o, 9p)</td>
+</tr>
+<tr>
+<td>Nominal preload, 0.65 Fty A_t</td>
+<td>7,116 N (7.1 N m)</td>
+<td>10,096 N (about 12 N m at K = 0.2)</td>
+<td>K TRACED (9w)</td>
+</tr>
+<tr>
+<td>Preload scatter</td>
+<td>+/- 35 %</td>
+<td></td>
+<td>TRACED (9e, 9v)</td>
+</tr>
+<tr>
+<td>Relaxation allowance</td>
+<td>5 % of nominal, off P_min</td>
+<td></td>
+<td>ASSUMPTION, conservative for the clamp</td>
+</tr>
+<tr>
+<td>P_max (1.35 P_nom)</td>
+<td>9,606 N</td>
+<td>13,632 N</td>
+<td>used for yield and ultimate</td>
+</tr>
+<tr>
+<td>P_min (0.60 P_nom)</td>
+<td>4,270 N</td>
+<td>6,058 N</td>
+<td>used for separation and slip</td>
+</tr>
+<tr>
+<td>Friction mu, uncoated clean metal</td>
+<td>0.20</td>
+<td></td>
+<td>TRACED (9b)</td>
+</tr>
+<tr>
+<td>Friction mu, coated or chem-filmed</td>
+<td>0.10</td>
+<td></td>
+<td>TRACED (9c)</td>
+</tr>
+<tr>
+<td>Bearing allowables Fbry / Fbru</td>
+<td>207 / 345 MPa</td>
+<td></td>
+<td>SECONDARY (9s, 9t)</td>
+</tr>
+<tr>
+<td>Factors: yield 1.25, ultimate 1.40, separation 1.2, slip 1.25</td>
+<td></td>
+<td></td>
+<td>separation TRACED (9a); slip factor ASSUMPTION, kept from Phase 2</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Model</strong> (<code>p7_build.py steps=joint</code>; figure <code>figures/fig_joint_model.png</code>).</p>
+<table>
+<thead>
+<tr>
+<th>Part</th>
+<th>How it is modelled</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bracket</td>
+<td>V-A in C3D10, 4.0 mm global with 1.5 mm inside r = 8 mm of each bolt (a declared deviation from the 3.0 / 1.2 mm intended mesh, for run time; DECISIONS 17.3a; no mesh study of the joint model itself)</td>
+</tr>
+<tr>
+<td>Panel</td>
+<td>rigid, hard contact with friction (mu = 0.2) against the flange underside</td>
+</tr>
+<tr>
+<td>Bolts</td>
+<td>B31 beams fixed in the panel, preloaded by <code>*PRE-TENSION SECTION</code>, then held at fixed length</td>
+</tr>
+<tr>
+<td>Washers</td>
+<td>finite and rigid, frictionless against the flange top (5.0 mm radius M5, 6.0 mm M6)</td>
+</tr>
+<tr>
+<td>Hole clearance</td>
+<td>a connector with +/- 0.25 mm stops; the bolt carries no shear until it bears</td>
+</tr>
+<tr>
+<td>Box</td>
+<td>as in the random-response model</td>
+</tr>
+</tbody>
+</table>
+<p>The panel is declared rigid, not a distributed-stiffness plate: this gives the flange the stiffest possible heel support, which maximises the prying reaction at the flange edge (conservative for bolt tension), and puts all the member compliance in the flange, so the load factor is somewhat low against a real panel and the separation load correspondingly a little high (unconservative in principle, second order next to the prying geometry).</p>
+<p><strong>Loads.</strong> One monotonic ramp per axis and sign (Z+, Z-, Y+, Y-, X+), each followed by an unload step, carrying the friction history forward as in a test sequence. Two load levels are read on every ramp: the 3-sigma uniform-inertia (J) levels, and enveloped levels (J times the ratio by which a modal-superposition route exceeds the uniform route at the inner bolts, up to 1.85 in X). <strong>The enveloped level is the headline for the tension-driven criteria</strong> (yield, ultimate, separation); <strong>the J level is the headline for slip</strong>, since the two load routes agree on total base reaction within 1.3 percent and enveloping would inflate the interface shear unrealistically.</p>
+<p><strong>Criteria</strong> (DECISIONS 17.3). Bolt tension yield: MS = P_ty / P_b(1.25 L) - 1 at P_max. Ultimate: MS = P_tu / P_b(1.40 L) - 1 at P_max. Separation: MS = L_sep / (1.2 L) - 1 at P_min. Slip: MS = L_slip / (1.25 L) - 1 at P_min. If slip is negative, a shear-bearing route is evaluated (below).</p>
+<p><strong>Disclosure: the separation criterion changed after the first results were seen (R-11).</strong> The criterion declared first, before any joint solve, was 10 percent of the washer-annulus contact area open below 1 kPa. It was a criterion chosen for this study, not the standard's. After the M5 results were seen, a review ruled that R-6 required NASA-STD-5020's own definition, and asked for it quoted from the source before applying anything. Section 3.2.2 of NASA-STD-5020A with Change 1 defines separation as "the state of no compressive load between mating parts local to the fastener." That is full relief of the interface clamp force local to the bolt, not partial gapping of part of the footprint while compression remains elsewhere around it. The FE measure was changed accordingly to the contact normal force within r &lt;= 10 mm (2 washer radii) of the bolt axis, graded from the same completed runs with no new solve. <strong>The 10 percent criterion's value stays in the record as a stricter secondary reading (-0.83 at Q20, M5); the NASA-STD-5020 definition is the headline everywhere below.</strong></p>
+<p><strong>M5 results (P7_JMIN at P_min, P7_JMAX at P_max; worst bolt, axis and sign).</strong></p>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Q10</th>
+<th>Q20</th>
+<th>Governing case</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bolt tension yield</td>
+<td>+0.06</td>
+<td><strong>-0.03</strong></td>
+<td>Y+, inner bolt, 11,286 N at 148.2 g</td>
+</tr>
+<tr>
+<td>Bolt tension ultimate</td>
+<td>+0.47</td>
+<td>+0.33</td>
+<td>Y+</td>
+</tr>
+<tr>
+<td>Separation, NASA-STD-5020 (full relief)</td>
+<td>&gt; +0.58</td>
+<td><strong>&gt; +0.17</strong></td>
+<td>no relief on any ramp; lowest clamp force left 1,369 N (29 %) at 1.2 L, Y-</td>
+</tr>
+<tr>
+<td>Separation, 10 % annulus reading (secondary)</td>
+<td>-0.76</td>
+<td>-0.83</td>
+<td>local heel gapping from about 23 g</td>
+</tr>
+<tr>
+<td>Slip</td>
+<td>+0.09</td>
+<td><strong>-0.20</strong></td>
+<td>X+, gross slip onset about 80 g</td>
+</tr>
+<tr>
+<td>Shear-bearing route (fallback, hand V)</td>
+<td>shank +2.46, bearing +1.86 / +3.26</td>
+<td>shank +1.48, bearing +1.05 / +2.05</td>
+<td>bolt 4, Y</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Effective load factor</strong> (bolt force change over the axial interface force, replacing the Phase 2 assumed value of 0.25): <strong>0.18 at P_max, Z+; 0.43 at P_max, Y+; 0.83 at P_min, Z+; 1.46 at P_min, Y+.</strong> At P_max the joint stays closed and the flange carries the load; at P_min the inner heel gaps locally and the bolt itself takes the prying, which is why the load factor exceeds 1 there.</p>
+<p><strong>What the Phase 2 hand prying calculation got right and wrong, against the joint model.</strong>
+- <strong>Right: prying is real and governs the inner row.</strong> Y+ and Z+, which pull the box side of the web away from the panel, load the inner bolts; the outer bolts barely change.
+- <strong>Conservative for bolt yield at P_max.</strong> At Z+, Q20, 1.25 L, the hand calculation's bolt force increase was 2,079 N; the FE gives 1,113 N.
+- <strong>Unconservative on the clamp side.</strong> At P_min the FE force increase is 3,000 N, 1.4 times the hand value; a fixed 0.25 load factor cannot represent a joint that gaps locally rather than losing clamp uniformly.
+- <strong>Far too harsh on separation and slip.</strong> The hand calculation gave -0.40 on separation against the FE's &gt; +0.17, and -1.13 on slip at every bolt against an FE that shows no slip in Y or Z and slip in X only above about 80 g.
+- <strong>Why the M5 yield margin is still negative:</strong> the preload convention puts P_max at 0.878 P_ty, so even the FE's smaller prying increase uses most of the remaining +0.14 zero-load margin; the lower traced Fty (772 against Phase 2's hand value of 827 MPa) removed Phase 2's own small cushion.</p>
+<p><strong>R-7: M6 bolts, the smallest fix in the declared order.</strong> Trigger: two negative M5 margins on cases already complete (bolt yield -0.03 at Q20, and the then-current separation criterion, about -0.7). R-7's order of preference is M6 bolts, then a thicker or wider flange at the inner row, then relocating the inner bolts; M6 was chosen, the only geometry change being the base holes (6.5 mm) and washer (12 mm). <strong>Prediction, written before the run (DECISIONS 17.8):</strong> bolt yield MS between -0.02 and +0.01 ("M6 does not clearly fix it"), separation and slip improve, f1 rises by less than 0.5 percent.</p>
+<p><strong>M6 results (final design): P7_J6MAX and P7_J6MIN, loads scaled by the M6 in-axis reaction ratios (+2.4 % X, +1.9 % Y).</strong></p>
+<table>
+<thead>
+<tr>
+<th>Criterion</th>
+<th>Preload bound</th>
+<th>Q10</th>
+<th>Q20</th>
+<th>Reference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bolt tension yield</td>
+<td>P_max</td>
+<td>+0.09</td>
+<td><strong>+0.024</strong> (Y+; +0.029 unscaled)</td>
+<td>17.12, 17.13</td>
+</tr>
+<tr>
+<td>Bolt tension ultimate</td>
+<td>P_max</td>
+<td>+0.54</td>
+<td>+0.43</td>
+<td>17.12</td>
+</tr>
+<tr>
+<td>Separation, NASA-STD-5020 (full relief)</td>
+<td>P_min</td>
+<td>&gt; +0.58</td>
+<td><strong>&gt; +0.14</strong> (Y and Z ramps; X+ bounded by the M5 run, below)</td>
+<td>17.14</td>
+</tr>
+<tr>
+<td>Separation, 10 % annulus reading (secondary)</td>
+<td>P_min</td>
+<td>-0.73</td>
+<td>-0.81</td>
+<td>17.14</td>
+</tr>
+<tr>
+<td>Slip</td>
+<td>P_min</td>
+<td>+0.46</td>
+<td><strong>+0.075</strong> (X+, onset about 110.6 g)</td>
+<td>17.14</td>
+</tr>
+<tr>
+<td>Slip, enveloped level (information)</td>
+<td>P_min</td>
+<td>-0.15</td>
+<td>-0.41</td>
+<td>17.14</td>
+</tr>
+<tr>
+<td>Shank shear, bearing route (fallback)</td>
+<td>any</td>
+<td>+3.78</td>
+<td>+2.42</td>
+<td>17.14</td>
+</tr>
+<tr>
+<td>Bearing yield / ultimate, bearing route</td>
+<td>any</td>
+<td>+2.37 / +4.02</td>
+<td>+1.41 / +2.59</td>
+<td>17.14</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The M6 prediction was low by 0.02 to 0.05, in the declared bias direction:</strong> the larger washer and stiffer bolt delay the local opening more than the central estimate assumed. Bolt tension yield is positive with M6, so R-12 (a specified lower installation preload) was not needed and was not run (DECISIONS 17.12). Effective load factor with M6: 0.09 at P_max, 0.65 at P_min (Z+); both lower than the M5 values, since the larger washer and higher clamp delay the heel gapping.</p>
+<p><strong>The shear-bearing route is a declared design choice, not a slip pass.</strong> Slip is positive at the declared friction coefficient (mu = 0.20, dry, uncoated: +0.075 at Q20). The shear-bearing route (shank shear and bearing checked directly, with no friction credit) is carried as the fallback for two cases: <strong>coated or chem-filmed faying surfaces</strong>, where TFSR 14 requires mu = 0.10 and slip would be negative (about -0.46 at Q20 by proportion), and the enveloped load level, where slip is also negative (-0.41 at Q20) as information. NASA-STD-5020A section 4.4.6 allows shear to be carried without friction credit, and the 0.25 mm hole clearance bounds the rigid-body shift of the box before the hole stops engage. It is not evidence that friction slip fails at the declared mu: at mu = 0.2 slip is positive and is the headline.</p>
+<p><strong>Qualifiers, stated as open items, not softened.</strong>
+- <strong>The bolt yield margin is thin (+0.024), and the preload convention sets it:</strong> P_max = 1.35 x 0.65 Fty A_t = 0.878 P_ty for either bolt size, so the +/- 35 percent torque-control scatter uses almost all of the margin before any external load is added. A lubrication-controlled torque (+/- 25 percent, TRACED 9d) or a lower installation torque would open this margin if wanted; this is the R-12 lever, not triggered because the margin is already positive.
+- <strong>The separation margins are lower bounds.</strong> No ramp reached full relief of the clamp at any preload bound or bolt size; the reported margins are (ramp maximum) / (1.2 L) - 1, not an interpolated onset.
+- <strong>The M6 X+ separation margin (&gt; +0.14, Q20) rests on the M5 run as a bound</strong>, not on a direct M6 result: over the common load range the M6 clamp exceeds the M5 clamp at every bolt by 1,870 to 2,190 N, and the M5 run reached the full X+ ramp (208.5 g) with no relief, so a stiffer, higher-clamped M6 joint on the same bracket and load cannot relieve the clamp earlier.
+- <strong>The P7_J6MIN run (M6 at P_min) was stopped in an unrestrained gross-slip regime after every graded quantity had already been written to frames.</strong> At close it had completed the Z+, Z- Y+ and Y- ramps and reached 121.9 g of the X+ ramp before cutting to increments of about 1e-4 as the flange slides freely toward the 0.25 mm hole stops; it was left running untouched, and later frames are not used. This is why the X+ separation margin above is bounded from the M5 run rather than read directly from this job.</p>
+<p><strong>Final design margin summary.</strong> Every continuum margin is positive (worst +0.59, yield, Y, Q20, Section 4.4); every joint margin is positive on the declared criteria (bolt yield +0.024, ultimate +0.43, separation &gt; +0.14, slip +0.075, shank shear +2.42, bearing +1.41). The shear-bearing route is carried only as a declared design choice for the coated-surface and enveloped-level cases. Figures: <code>figures/fig_joint_margins.png</code>, <code>figures/fig_joint_opening.png</code>.</p>
+<h3>4.6 Fatigue</h3>
+<p><strong>Method.</strong> Steinberg three-band, traced fractions 68.27, 27.18, 4.28 percent at 1, 2, 3 sigma, Miner's rule, 2 minutes per axis, damage summed over X, Y and Z point by point, S-N 96.5 MPa at 5e8 cycles, b = 6.4 (the brief's point; P7_SOURCES row 6g gives a SECONDARY 70 to 90 MPa range, run as a conservative sensitivity at 70 MPa). The 4x life factor is ASSUMPTION (row 3e).</p>
+<p>The converged location on the M5/V-A geometry, before the R-10 restatement: the lower box-mount footprint (17.6, 0.4, 30.3) mm, the same location as the pre-R-10 Y-case design stress.</p>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>X / Y / Z Miner sum</th>
+<th>Total</th>
+<th>Total x4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Q10, 96.5 MPa</td>
+<td>5.2e-10 / 2.4e-6 / 5.1e-7</td>
+<td>2.9e-6</td>
+<td>1.1e-5</td>
+</tr>
+<tr>
+<td>Q20, 96.5 MPa</td>
+<td>4.5e-9 / 2.2e-5 / 4.7e-6</td>
+<td>2.7e-5</td>
+<td>1.1e-4</td>
+</tr>
+</tbody>
+</table>
+<p>Both cases pass by four orders of magnitude. <strong>R-10 excludes the box-mount footprint itself from the design stress</strong> (Section 4.4), which can only lower this damage field, so the table above is an upper bound (DECISIONS 17.7). On the final M6 design, with both the base and box-mount zones excluded, the fatigue total (4x factor) outside the zones is <strong>9.3e-6 at Q = 10 and 9.0e-5 at Q = 20</strong> (RESULTS_LOG.md), both lower than the M5 upper bound above and far below 1. No per-axis breakdown was logged for the M6 case.</p>
+<p><strong>Singular point (labelled singular, not quotable, kept per R-4).</strong> At the base washer edge, with the same 96.5 MPa S-N point, the Q10 Miner sum is 0.053 (0.21 with the 4x factor) and the Q20 sum is 0.50, <strong>2.02 with the 4x factor, above 1</strong>. With the SECONDARY 70 MPa point the Q20 total with the 4x factor rises to 15.7. These numbers describe a mesh-dependent singular stress, not a converged one; they are kept in the log under R-4 and are not a headline result.</p>
+<h2>5. Figures</h2>
+<ul>
+<li><code>figures/fig_mode1_final.png</code>: mode 1 of V-A with M5 bolts, web bending, 101.47 Hz (the M6 final design has the same mode shape, at 104.41 Hz; no separate M6 mode figure was generated).</li>
+<li><code>figures/fig_mass_vs_f1.png</code>: bracket mass vs first frequency, variants V-A and V-B prediction.</li>
+<li><code>figures/fig_box_response_asd_final.png</code>: response ASD at the box CG per axis, V-A with M5 bolts (used to derive the joint interface loads; the M6 qualification response is tabulated in RESULTS_LOG.md).</li>
+<li><code>figures/fig_rms_vm_final.png</code>: RMS von Mises contour map, base singular zone shaded, design point marked (V-A, M5, before the R-10 box-mount exclusion).</li>
+<li><code>figures/fig_mesh_ladder_final.png</code>: convergence of the first three frequencies, redrawn with the 1.2 mm rung.</li>
+<li><code>figures/fig_singularity.png</code>: distance-vs-stress profile at the base washer edge, four meshes, the d = 3.0 mm criterion.</li>
+<li><code>figures/fig_boxmount_sensitivity.png</code>: box-mount footprint mesh sensitivity, the R-10 study, d_box = 0.</li>
+<li><code>figures/fig_joint_model.png</code>: the nonlinear FE joint model, bracket, panel, bolts and washers.</li>
+<li><code>figures/fig_joint_margins.png</code>: joint margins by criterion, M5 and M6.</li>
+<li><code>figures/fig_joint_opening.png</code>: washer-annulus contact behaviour against load level, the local heel gapping the separation criteria are graded against.</li>
+</ul>
+<h2>6. Predictions that failed</h2>
+<ol>
+<li><strong>V1, first-frequency closed form (declared bias: closed form higher than FE; band 10 percent).</strong> Observed: closed form +34.0 percent above FE on the baseline, +50.6 percent on the final design. What was learned: the closed form omits the flange-root rotational spring entirely, and that spring's share of the total compliance grows as the web is thickened, since the final design's root now carries 78 percent of the box motion in mode 1.</li>
+<li><strong>The V-A frequency prediction (Section 4.2).</strong> Declared bias: "slightly low" (101.9 Hz predicted). Observed: FE 101.47 Hz, 0.4 percent below the prediction, so the bias direction was wrong; the root compliance share grew slightly with the thicker web rather than shrinking. The error was small and did not change the variant decision, but it is recorded as a bias-direction miss, not folded into "close enough."</li>
+<li><strong>The M6 modal prediction (DECISIONS 17.8), wrong in size.</strong> Declared: f1 rises by less than 0.5 percent with M6 bolts. Observed: f1 rose from 101.47 to 104.41 Hz at 1.6 mm, +2.9 percent (mode 3 rose 7.9 percent). The larger rigid footprint at the base stiffens the root more than the prediction assumed; the direction was right, the size was not.</li>
+<li><strong>The M5 hand prying calculation against the joint model (Section 4.5).</strong> Declared to bound bolt tension conservatively with a 5 mm lever arm and a 0.25 load factor. Observed: conservative for bolt yield at P_max (hand 2,079 N against FE 1,113 N) but unconservative at P_min (hand load factor 0.25 against FE 0.83 to 1.46, since the joint gaps locally rather than losing clamp uniformly), and far too harsh on separation and slip (hand -0.40 and -1.13 against FE &gt; +0.17 and no slip in Y or Z). What was learned: a fixed load factor cannot represent a joint whose response depends on which side of preload it is loaded from; a nonlinear contact model was needed, not a better lever-arm guess.</li>
+<li><strong>V5b, box RMS vs Miles on the dominant mode (declared band: within 25 percent).</strong> Observed: -33.7 to -51.1 percent, both bolt sizes. What was learned: no single mode carries the box motion in any axis; two modes of comparable effective mass share it, each contributing 0.36 to 0.60 of its own Miles value.</li>
+</ol>
+<p>In every case the mechanism was investigated and reported; no band was retuned after the fact, and the 100 Hz requirement was kept exactly as declared after the 91.08 Hz baseline result (R-1). Where a wrong prediction changed the design (items 3 and 4), the design changed by the smallest declared lever, not by discarding the band.</p>
+<h2>7. Licence and limitations</h2>
+<p><strong>Fixed-base idealisation.</strong> The washer footprints are rigid couplings, and the box is a point mass on a distributing coupling. Both are stiffer than a real panel and a real fixture; a real installation may have a first mode several percent lower than reported here.</p>
+<p><strong>Point-mass box.</strong> The box is a rigid point mass with declared rotary inertia. It does not model internal box modes, flexible mounting, or the real interface stiffness to the bracket.</p>
+<p><strong>100 Hz requirement, ASSUMPTION, P7_SOURCES row 2c.</strong> Traced GEVS figures are 50 Hz (lateral axes Y, Z) and 70 Hz (thrust axis X). The 100 Hz target is aerospace design practice for additional decoupling margin and is kept as declared under R-1.</p>
+<p><strong>Damping, TRACED at Q = 10 (5 percent critical), swept at Q = 20 (2.5 percent critical).</strong> The largest single uncertainty in the analysis: responses scale roughly with the square root of Q, so this is about a 41 percent swing between the two cases, in both the continuum and the joint margins.</p>
+<p><strong>Bolted joint model (R-6), its own idealisations (DECISIONS 17.3, 17.3a):</strong>
+- <strong>Panel: rigid</strong>, not a distributed-stiffness plate. Bias: maximises the prying reaction at the flange edge (conservative for bolt tension), while putting all member compliance in the flange, which makes the load factor somewhat low and the separation load slightly high against a real panel (unconservative in principle, second order next to the prying geometry).
+- <strong>Washers: finite and rigid</strong>, frictionless against the flange top; head friction is not counted as slip resistance, only the faying surface is.
+- <strong>Contact and friction:</strong> hard contact, mu = 0.20 (TRACED, uncoated clean metal, row 9b) or mu = 0.10 (TRACED, coated or chem-filmed, row 9c). Hole clearance is a square +/- 0.25 mm stop, declared, not a true circular clearance.
+- <strong>Mesh:</strong> 4.0 mm global with 1.5 mm local refinement, coarser than the declared 3.0 / 1.2 mm intent, for run time; no mesh convergence study was done on the joint model itself (DECISIONS 17.3a).
+- <strong>Inputs, traced against assumed (R-5, Section 4.5):</strong> TRACED: Ftu, A_t, preload scatter, mu (both values), the separation factor and definition, K. ASSUMPTION: Fty (0.70 Ftu, conservative against Phase 2's 827 MPa hand value), Fsu (0.60 Ftu), the 5 percent relaxation allowance (conservative for the clamp), the slip factor 1.25 (conservative against 1.0), bolt modulus 201 GPa. SECONDARY: the bearing allowables (207 / 345 MPa, conservative against the recalled Phase 2 values).
+- <strong>The d = 3.0 mm continuum rule is applied to the M6 base footprint without a new singularity study</strong> (Section 4.4); the design point sits on the edge of that zone.
+- <strong>The M6 X+ separation margin rests on the M5 run as a bound</strong>, not a direct M6 result (Section 4.5).</p>
+<p><strong>Fatigue.</strong> The 4x life factor is ASSUMPTION (row 3e). The S-N point (96.5 MPa at 5e8 cycles) is the brief's; P7_SOURCES row 6g gives a SECONDARY range of 70 to 90 MPa, and the 70 MPa end is carried as a conservative sensitivity (Section 4.6).</p>
+<p><strong>Washer-edge singularity.</strong> The design is qualified by continuum stress outside d = 3.0 mm, established by the R-3(a) mesh study (Section 4.4). The singular point is labelled singular, not quotable, and appears in this report only for completeness.</p>
+<p><strong>Box-mount footprint (R-10).</strong> The lower box-mount footprint was found singular by the same method as the base washers (Section 4.4) and is now excluded (d_box = 0) from the design stress; this was the outstanding mesh-sensitivity item from Phase 2 and is closed.</p>
+<p><strong>No test correlation.</strong> Every number in this report is a model result: traced material properties, a declared damping assumption, declared idealisations, and, for the joint, a declared rigid panel and idealised hole-clearance stops. No shaker test, on this bracket or a comparable one, has been run to check the fixed-base assumption, the real Q of the assembly, or the joint behaviour, including the P_min gross-slip regime, against these predictions.</p>
+<h2>8. What I would do next</h2>
+<ol>
+<li><strong>Test correlation.</strong> No shaker test exists for this bracket, panel or joint. A prototype qualification test would check the fixed-base idealisation, the real Q of the assembly, and, most importantly, whether the joint model's rigid panel and idealised hole-clearance stops predict the real bolt and clamp behaviour under 3-sigma random loads.</li>
+<li><strong>A preload-controlled installation.</strong> The bolt tension yield margin is thin (+0.024) and the +/- 35 percent torque-control scatter uses almost all of it (Section 4.5). Specifying lubrication-controlled torque (+/- 25 percent, TRACED) or a lower installation torque, and re-checking yield, separation and slip at both preload bounds, would open this margin without a further geometry change.</li>
+<li><strong>The coated-surface case.</strong> Slip is positive at the declared mu = 0.20 but would be negative at mu = 0.10 (anodised or chem-filmed faying surfaces). If the flight hardware's actual surface finish is not yet fixed, the shear-bearing route (already positive, Section 4.5) should be carried forward as the qualifying route rather than assumed away, or the surface finish should be specified and traced.</li>
+<li><strong>The P_min gross-slip regime in X+.</strong> P7_J6MIN was stopped mid-ramp in an unrestrained gross-slip regime after the graded quantities were already written; it was not run to completion, and the M6 X+ separation margin currently rests on the M5 run as a bound (Section 4.5). Finishing that run, or rerunning it with tighter increment control through the slip transition, would replace that bound with a direct M6 result.</li>
+<li><strong>Mass reduction direction, if a future iteration allows it.</strong> With the first mode now passing by more margin (104.41 Hz on M6, a 4.4 percent margin) than the M5 design's 1.5 percent, and every continuum and joint margin positive, there may be room to trim mass; any such pass would need to re-check the joint margins, not just the frequency, since the M6 fix was driven by the joint, not by stiffness.</li>
+</ol>
+    <p class="report-source">Report text as written for the project; figures are on the project summary page.</p>
+  </article>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <dl class="tblock">
+      <div><dt>Drawn by</dt><dd>Usman Bashir</dd></div>
+      <div><dt>Contact</dt><dd><a href="mailto:usman.bashir1933@gmail.com">usman.bashir1933@gmail.com</a></dd></div>
+      <div><dt>Checked</dt><dd>Every number traces to the project report</dd></div>
+    </dl>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Payload Bracket: GEVS Random Vibration Qualification | Usman Bashir</title>
+<meta name="description" content="Abaqus/Standard modal and random-vibration qualification of an aluminium avionics bracket against the NASA GEVS spectrum, with 3-sigma margins, Steinberg fatigue and a preloaded bolted-joint model.">
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+
+<header class="site">
+  <div class="bar">
+    <div class="wrap nav-row">
+      <a class="brand" href="../index.html">Usman Bashir</a>
+      <button class="nav-toggle" aria-label="Open navigation" aria-expanded="false">Menu</button>
+      <nav class="primary">
+        <a href="../index.html#work">Work</a>
+        <a href="../index.html#publication">Publication</a>
+        <a href="../index.html#tools">Tools</a>
+        <a href="../index.html#contact">Contact</a>
+      </nav>
+    </div>
+  </div>
+  <div class="legend" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+</header>
+
+<main>
+  <div class="wrap project-header">
+    <a class="crumb" href="../index.html#work">All studies</a>
+    <h1>Payload Bracket: Random Vibration Qualification to NASA GEVS</h1>
+    <dl class="tblock"><div><dt>Solver</dt><dd>Abaqus/Standard, frequency extraction and random response</dd></div><div><dt>Validated against</dt><dd>Exact SDOF integral, Miles&rsquo; equation and a hand frequency model</dd></div><div><dt>Headline</dt><dd><strong>104.4 Hz</strong>first mode, every margin positive at 14.1 Grms</dd></div><div><dt>Material</dt><dd>Al 6061-T6 bracket, A286 M6 bolts</dd></div></dl>
+    <a class="btn quiet report-link" href="../reports/payload-bracket.html">Read the full technical report</a>
+  </div>
+
+  <section>
+    <div class="wrap">
+      <figure class="hero-figure"><div class="plate"><img src="../assets/img/payload-bracket/hero_mode1.png" alt="Aluminium L-bracket coloured by displacement magnitude in its first vibration mode: the web bends about its root, largest at the free top edge"></div><figcaption>First vibration mode: the web bends about its root on the flange. Shown for the stiffened bracket with the original M5 bolts (101.47 Hz); the final M6 design has the same mode shape at 104.41 Hz.</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="study"><div class="prose">
+      <h3>Problem</h3>
+      <p>Anything bolted inside a launch vehicle must survive the random vibration of launch. A 2 kg avionics box sits on an aluminium L-bracket that is bolted to a panel, and it is qualified to the NASA GEVS component spectrum: 20 to 2000 Hz, 14.1 Grms, two minutes in each axis. The bracket has to do two things at once. It must be stiff enough that its first mode stays above 100 Hz, clear of the vehicle&rsquo;s own low modes. And under the 3-sigma loads the spectrum produces, the bracket and its bolted base joint must keep positive margins against yield, ultimate, separation and slip, with fatigue life to spare.</p>
+
+      <h3>Method</h3>
+      <p>The bracket is built by a Python script and meshed in quadratic tetrahedra. The box is a 2 kg point mass with its rotary inertia, tied to its four mounting holes by a distributing coupling. Frequency extraction feeds a random-response analysis with base excitation in X, Y and Z separately, at two damping levels (Q = 10 as the baseline, Q = 20 as the sensitivity), since damping is the largest single uncertainty. Margins use the NASA-STD-5001 factors on 3-sigma stress, and fatigue uses Steinberg&rsquo;s three-band method with Miner&rsquo;s rule. The bolted base joint is checked as a joint to NASA-STD-5020, with a nonlinear contact model: preloaded bolts at both ends of the preload scatter, flange-to-panel contact with friction, and finite washers.</p>
+
+      <h3>Validation</h3>
+      <p>Every check had its pass band written down before the run it graded. The key one tests the solver itself. A single spring-mass system under the same GEVS spectrum gives 22.448 g RMS in Abaqus against 22.404 g from exact numerical integration, a 0.20 percent difference, so the random-response pipeline is trustworthy before it touches the bracket. The mesh converges: the first three frequencies move by 0.14, 0.34 and 0.23 percent between the two finest meshes, against a 1 percent band. Two declared checks failed and stay in the record as failures. A textbook cantilever formula overpredicted the first mode by 50.6 percent, because it treats the web root as rigid. A second hand model, derived to include the flange flexing at the root, landed within 5.5 percent, which shows the mechanism is understood. And the box response comes out 34 to 51 percent below Miles&rsquo; single-mode estimate on the dominant mode, because two modes share the box mass in every axis.</p>
+
+      <h3>The design iteration</h3>
+      <p>The 6 mm baseline bracket failed the frequency requirement at 91.08 Hz. A 7 mm web (30 g more) lifted the first mode to 101.5 Hz. A hand prying check of the bolted joint then showed negative margins, and a full nonlinear contact model confirmed two of them for the original M5 bolts: bolt yield and slip. Moving to M6 bolts, the smallest change in the declared order of fixes, closed both. The same contact model also showed that the hand check had been far too harsh on separation and slip, and unconservative at the low end of the preload scatter, which is why a joint needs its own model rather than a better lever-arm guess.</p>
+
+      <h3>Headline results</h3>
+      <table class="results">
+        <caption>Final design: 7 mm web, four A286 M6 bolts, GEVS qualification level. Margins are at Q = 20, the worse of the two damping cases.</caption>
+        <thead>
+          <tr><th>Quantity</th><th class="num">Value</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>First mode (requirement 100 Hz)</td><td class="num">104.4 Hz</td></tr>
+          <tr><td>First mode on the converged mesh (M5 geometry, a lower bound)</td><td class="num">101.3 Hz</td></tr>
+          <tr><td>Box RMS acceleration, X / Y / Z, Q = 10</td><td class="num">21.0 / 22.6 / 22.1 g</td></tr>
+          <tr><td>Bracket stress margin, yield / ultimate</td><td class="num">+0.59 / +0.71</td></tr>
+          <tr><td>Bolt tension margin, yield / ultimate</td><td class="num">+0.024 / +0.43</td></tr>
+          <tr><td>Joint separation margin (NASA-STD-5020)</td><td class="num">&gt; +0.14</td></tr>
+          <tr><td>Joint slip margin</td><td class="num">+0.075</td></tr>
+          <tr><td>Bolt shear / flange bearing margin</td><td class="num">+2.42 / +1.41</td></tr>
+          <tr><td>Fatigue damage, 3 axes, 4&times; life factor, Q = 10</td><td class="num">9.3 &times; 10<sup>&minus;6</sup></td></tr>
+          <tr><td>Bracket mass (baseline 0.337 kg)</td><td class="num">0.367 kg</td></tr>
+        </tbody>
+      </table>
+      <p>The thin number is bolt yield, at +0.024. It is set almost entirely by the &plusmn;35 percent scatter of torque-controlled preload, not by the vibration load, so the cheapest way to widen it is an installation callout (controlled lubrication or a lower torque), not more metal.</p>
+    </div></div>
+  </section>
+
+  <section class="fig-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Figures</h2></div>
+      <div class="figure-grid">
+        <figure class="result-fig">
+          <div class="plate" data-zoom><img src="../assets/img/payload-bracket/v4_sdof_check.png" alt="Log-log plot of acceleration spectral density against frequency for a single-degree-of-freedom system: Abaqus points lie on the exact curve, with the GEVS input spectrum dashed" loading="lazy"></div>
+          <figcaption>The solver check: a 200 Hz spring-mass system under the GEVS input. Abaqus (dots) lies on the exact integral (line), 22.448 g against 22.404 g RMS, 0.20 percent apart.</figcaption>
+        </figure>
+        <figure class="result-fig">
+          <div class="plate" data-zoom><img src="../assets/img/payload-bracket/box_response_asd.png" alt="Three log-log plots of acceleration spectral density at the box centre of gravity for excitation in X, Y and Z, each with two damping cases and the dashed GEVS input" loading="lazy"></div>
+          <figcaption>Response at the box centre of gravity for excitation in each axis, at Q = 10 and Q = 20, against the GEVS input. Shown for the stiffened bracket with M5 bolts; two resonances share the box motion in every axis.</figcaption>
+        </figure>
+        <figure class="result-fig">
+          <div class="plate" data-zoom><img src="../assets/img/payload-bracket/mesh_ladder.png" alt="Three plots of the first three natural frequencies against degrees of freedom for four mesh sizes, each levelling off" loading="lazy"></div>
+          <figcaption>Mesh convergence of the first three modes over four meshes (M5 geometry). The two finest meshes agree within 0.34 percent, and the first mode stays above the 100 Hz requirement on every mesh.</figcaption>
+        </figure>
+        <figure class="result-fig">
+          <div class="plate" data-zoom><img src="../assets/img/payload-bracket/washer_singularity.png" alt="Two plots: peak stress at a rigid washer edge rising with every mesh refinement, and stress at fixed distances from the edge levelling off" loading="lazy"></div>
+          <figcaption>Why the peak at a bolt washer is not quoted: at the rigid washer edge the stress keeps rising as the mesh is refined, while 3 mm away it converges. Margins are read outside that zone.</figcaption>
+        </figure>
+        <figure class="result-fig tall">
+          <div class="plate" data-zoom><img src="../assets/img/payload-bracket/joint_model.png" alt="Contact pressure map on the flange underside around four bolts after preload, beside a to-scale section through the bracket, bolts, washers and panel" loading="lazy"></div>
+          <figcaption>The bolted-joint model: contact pressure under the flange after preload (left) and a to-scale section of the bracket, bolts and panel (right). Shown with the M5 bolts that the model first checked; the final design uses M6.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="lim-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Limitations</h2></div>
+      <div class="limits-box">
+        <ul>
+          <li>The panel is modelled as rigid and the box as a rigid point mass. A real panel and fixture are softer, so the real first mode may be a few percent lower.</li>
+          <li>Damping is assumed, not measured. Responses scale roughly with the square root of Q, which is why both Q = 10 and Q = 20 are reported.</li>
+          <li>The slip margin holds for bare metal faying surfaces (friction 0.20). With anodised or chem-filmed surfaces (0.10) it would be negative, and the joint would qualify as a bearing joint instead, which is declared as a design choice rather than claimed as a slip pass.</li>
+          <li>The separation margins are lower bounds, because the joint never fully separated on the load ramps. The M6 bolt&rsquo;s X-direction separation margin is bounded by the M5 run.</li>
+          <li>The 3 mm exclusion zone at the washers was established for the M5 footprint and applied to the larger M6 footprint without a new study.</li>
+          <li>The 100 Hz requirement is common design practice, stricter than the GEVS baseline figures of 50 Hz lateral and 70 Hz thrust. No shaker test has been run.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="tool-section">
+    <div class="wrap">
+      <div class="section-head"><h2 class="section-title">Tools</h2></div>
+      <div class="toolchain">
+        <span class="pill">Abaqus/Standard, random response</span>
+        <span class="pill">Nonlinear contact, bolt pre-tension</span>
+        <span class="pill">Python, scripted builds and post-processing</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap next-project">
+    <a href="brake-disc.html">Next: Ventilated brake disc thermo-mechanical analysis </a>
+    <a href="../reports/payload-bracket.html">Full technical report</a>
+  </div>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <dl class="tblock">
+      <div><dt>Drawn by</dt><dd>Usman Bashir</dd></div>
+      <div><dt>Contact</dt><dd><a href="mailto:usman.bashir1933@gmail.com">usman.bashir1933@gmail.com</a></dd></div>
+      <div><dt>Checked</dt><dd>Every number traces to the project report</dd></div>
+    </dl>
+  </div>
+</footer>
+
+<script src="../assets/js/main.js"></script>
+</body>
+</html>

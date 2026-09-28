@@ -141,6 +141,17 @@
       </div>
 
       <div class="also">
+        <a class="also-row" href="projects/payload-bracket.html">
+          <div class="plate"><img src="assets/img/payload-bracket/hero_mode1.png" alt="Aluminium L-bracket coloured by displacement in its first vibration mode, the web bending about its root" loading="lazy"></div>
+          <div>
+            <p class="solver">Abaqus/Standard, random response, bolted-joint contact</p>
+            <h3>Payload bracket: random vibration qualification to NASA GEVS</h3>
+          </div>
+          <div class="res">
+            <b>104.4 Hz first mode, every margin positive</b>
+            <p>Random-response pipeline checked against an exact SDOF integral to 0.20%. A preloaded contact model of the bolted joint drove the fix from M5 to M6 bolts.</p>
+          </div>
+        </a>
         <a class="also-row" href="projects/brake-disc.html">
           <div class="plate"><video data-autoplay muted loop playsinline preload="metadata" poster="assets/img/brake-disc/v_turntable.jpg" aria-label="Grey ventilated brake disc rotating slowly, viewed from slightly above so the vane passages around the rim are visible."><source src="assets/img/brake-disc/v_turntable.mp4" type="video/mp4"></video></div>
           <div>
@@ -175,7 +186,7 @@
       </div>
       <table class="tools">
         <tr><td>Abaqus/Explicit</td><td>Crash box: oblique impact with self-contact, a 30-degree angle sweep</td></tr>
-        <tr><td>Abaqus/Standard</td><td>Composite buckling and postbuckling, brake disc thermal stress, control arm, L-PBF</td></tr>
+        <tr><td>Abaqus/Standard</td><td>Composite buckling and postbuckling, random vibration and bolted-joint contact, brake disc thermal stress, control arm, L-PBF</td></tr>
         <tr><td>Fortran user subroutines</td><td>DFLUX moving laser heat source for the L-PBF study</td></tr>
         <tr><td>Tosca</td><td>Multi-load-case topology optimisation of the control arm</td></tr>
         <tr><td>OpenFOAM</td><td>Ahmed body external aerodynamics, run in parallel on a cloud VM</td></tr>
